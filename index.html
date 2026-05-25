@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity VR Engine & Autonomous Agent Market</title>
+  <!-- 폰트 로드: DM Mono 및 Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/index.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- ==========================================================================
+         LEFT: 제어, AI 저작도구 및 에이전트 인터페이스 (LYT-Cyberchiken)
+         ========================================================================== -->
+    <aside class="control-pane">
+      <h1>CHICKEN VR AUTHORING</h1>
+      
+      <div class="pane-content">
+        <!-- 아키텍처 핵심 정립 영역 -->
+        <p style="font-size: 0.82rem; color: var(--lyt-text-muted); margin-bottom: 1rem;">
+          <mark>지오메트릭 커널(Kernel)</mark> 기반 렌더러가 구축한 물리 가상현실 공간입니다. 3D 사물(Contents)과 상호작용 프로그램(Program)이 실시간 작동하며 P2P 거래를 지원합니다.
+        </p>
+
+        <!-- 0. 가상 환경 셀렉터 (도시 / 실내 / 시골) -->
+        <section class="env-selector">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-yellow); -webkit-text-fill-color: initial; background: none;">Select VR Environment</h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin: 0;">가상현실의 핵심 테마 환경을 전환하거나 비웁니다.</p>
+          <div class="env-btn-group">
+            <button id="btn-env-urban" class="btn-env active">도시 Metropolis</button>
+            <button id="btn-env-indoor" class="btn-env">실내 Cozy Room</button>
+            <button id="btn-env-rural" class="btn-env">시골 Countryside</button>
+          </div>
+          <!-- World Clear 단추 추가 -->
+          <button id="btn-clear-world" class="btn-action" style="margin-top: 0.6rem; width: 100%; border-color: var(--lyt-accent-purple); color: var(--lyt-accent-purple); padding: 0.4rem; font-size: 0.8rem; background: rgba(181, 126, 220, 0.05);">공간 Clear (비우기)</button>
+        </section>
+
+        <!-- 1. 지갑 시스템 (사용자 vs AI 에이전트) -->
+        <section class="wallet-status">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-cyan); -webkit-text-fill-color: initial; background: none;">Decentralized Autonomous Wallets</h3>
+          <div class="wallet-grid">
+            <div class="wallet-info">
+              <span>User Wallet Address</span>
+              <div class="user-address" id="user-wallet-address">0xUser...F8a1</div>
+              <span style="margin-top:0.3rem;">Balance</span>
+              <div id="user-balance" style="color:#fff;">10.00 CHKN</div>
+            </div>
+            <div class="wallet-info">
+              <span>Agent Wallet Address</span>
+              <div class="agent-address">0xAgent...3c99</div>
+              <span style="margin-top:0.3rem;">Balance</span>
+              <div id="agent-balance" style="color:#fff;">4.50 CHKN</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. 인터랙션 인스펙터 (선택 사물 정보 및 원격 조종) -->
+        <section class="inspector-section">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-purple); -webkit-text-fill-color: initial; background: none;">Interaction Inspector</h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">뷰포트 내의 물리 사물을 클릭하여 정보를 인스펙팅하고 상호작용합니다.</p>
+          <div class="inspector-field">
+            <span class="inspector-label">사물명 (Entity)</span>
+            <span class="inspector-value" id="inspect-name">없음 (화면 내 사물 클릭)</span>
+          </div>
+          <div class="inspector-field">
+            <span class="inspector-label">동작 상태 (State)</span>
+            <span class="inspector-value" id="inspect-state">-</span>
+          </div>
+          <div class="inspector-field" style="border-bottom: none; margin-bottom: 0;">
+            <span class="inspector-label">인터랙션 액션</span>
+            <button class="btn-action" id="btn-trigger-action" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">물리 제어 실행</button>
+          </div>
+        </section>
+
+        <!-- 3. AI 저작도구 (콘텐츠 & 프로그램 생성) -->
+        <section class="creator-section">
+          <h3>AI Generation Console</h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">새로운 가상 사물과 인터랙티브 스크립트를 AI 프롬프트 기반으로 절차적 민팅합니다.</p>
+          
+          <!-- Gemini API 설정 필드 추가 -->
+          <div style="margin-bottom: 0.8rem; display: flex; gap: 0.4rem; flex-direction: column;">
+            <span style="font-size: 0.72rem; color: var(--lyt-text-muted);">Google Gemini API Key</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="password" id="gemini-api-key" placeholder="AI Studio에서 발급받은 API 키 입력" style="flex: 1; font-family: var(--font-mono); font-size: 0.75rem; background: var(--lyt-bg-input); border: 1px solid #333; border-radius: 4px; padding: 0.4rem 0.6rem; color: #fff;">
+              <button id="btn-save-key" class="btn-action" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">저장</button>
+            </div>
+            <div id="key-status-text" style="font-size: 0.68rem; color: var(--lyt-text-muted); display: flex; align-items: center; gap: 0.3rem;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; display: inline-block;" id="key-status-dot"></span>
+              <span id="key-status-label">API 키 미등록 (Fallback 모드 작동)</span>
+            </div>
+          </div>
+
+          <div class="prompt-input-wrapper">
+            <input type="text" id="ai-prompt" placeholder="예: '신호등', '공원의 벤치', '시골 비닐하우스'" value="도심 속 가로등과 벤치">
+            <button class="btn-action" id="btn-ai-build">AI Build</button>
+          </div>
+
+          <h4 style="font-size: 0.75rem; margin-top: 0.8rem; color: var(--lyt-accent-yellow); -webkit-text-fill-color: initial; background: none;">Active Live Program Script</h4>
+          <div class="code-block" id="program-code-view">
+// AI Generated Interactive Program
+function animate(mesh, time) {
+    mesh.rotation.y = time * 0.001;
+}
+          </div>
+        </section>
+
+        <!-- 3.7. BIM 파라메트릭 크리에이터 (BIM Parametric Creator) -->
+        <section class="creator-section bim-creator-section" style="margin-bottom: 1rem; border-left: 4px solid var(--lyt-accent-purple);">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-purple); -webkit-text-fill-color: initial; background: none; display: flex; align-items: center; gap: 0.5rem;">
+            🏗️ BIM Parametric Creator
+          </h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.8rem;">
+            지오메트릭 커널 변수를 직접 조정하여 정밀한 BIM/IFC 공학 개체를 즉각 설계 및 시공합니다.
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.75rem;">
+            <!-- 대분류 선택 -->
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="color: var(--lyt-text-muted); font-weight: bold;">BIM 요소 분류 (IfcType)</span>
+              <select id="bim-select-type" style="background: var(--lyt-bg-input); border: 1px solid #333; border-radius: 4px; padding: 0.45rem 0.6rem; color: #fff; font-family: var(--font-body); font-size: 0.8rem;">
+                <option value="IfcBridge">IfcBridge (교량 구조물)</option>
+                <option value="IfcRoad">IfcRoad (도로 차선망)</option>
+                <option value="IfcTunnel">IfcTunnel (터널 쉴드 아치)</option>
+                <option value="IfcFacility">IfcFacility (에너지 발전/바이오돔)</option>
+                <option value="IfcConstructionEquipment">IfcConstructionEquipment (건설기계)</option>
+              </select>
+            </div>
+
+            <!-- 하부 소분류 선택 -->
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="color: var(--lyt-text-muted); font-weight: bold;">공학 세부 유형 (PredefinedType)</span>
+              <select id="bim-select-subtype" style="background: var(--lyt-bg-input); border: 1px solid #333; border-radius: 4px; padding: 0.45rem 0.6rem; color: #fff; font-family: var(--font-body); font-size: 0.8rem;">
+                <!-- 자바스크립트로 동적 로드 -->
+              </select>
+            </div>
+
+            <!-- 파라메트릭 슬라이더 컨테이너 -->
+            <div id="bim-sliders-container" style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.6rem;">
+              <!-- 자바스크립트 동적 슬라이더 렌더링 -->
+            </div>
+
+            <!-- 색상 및 발광 스타일 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <span style="color: var(--lyt-text-muted);">주재질 색상</span>
+                <input type="color" id="bim-color-main" value="#4f4f5a" style="background: none; border: 1px solid #333; width: 100%; height: 28px; border-radius: 4px; cursor: pointer;">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <span style="color: var(--lyt-text-muted);">네온 발광 색상</span>
+                <input type="color" id="bim-color-emissive" value="#00f0ff" style="background: none; border: 1px solid #333; width: 100%; height: 28px; border-radius: 4px; cursor: pointer;">
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="color: var(--lyt-text-muted); font-weight: bold;">네온 발광 스타일 (NeonStyle)</span>
+              <select id="bim-select-neonstyle" style="background: var(--lyt-bg-input); border: 1px solid #333; border-radius: 4px; padding: 0.45rem 0.6rem; color: #fff; font-family: var(--font-body); font-size: 0.8rem;">
+                <option value="pulse">pulse (서서히 점멸)</option>
+                <option value="flow">flow (방향성 흐름)</option>
+                <option value="rainbow">rainbow (무지개색 순환)</option>
+                <option value="cyber">cyber (디지털 도트 점멸)</option>
+                <option value="plasma">plasma (플라즈마 노이즈)</option>
+                <option value="work">work (건설 신호 블링크)</option>
+              </select>
+            </div>
+
+            <button class="btn-action" id="btn-bim-build" style="width: 100%; margin-top: 0.4rem; border-color: var(--lyt-accent-purple); color: var(--lyt-accent-purple); font-weight: bold; background: rgba(181, 126, 220, 0.05); padding: 0.5rem; font-size: 0.85rem;">
+              🛠️ BIM 절차적 시공 실행 (Build Parametric)
+            </button>
+          </div>
+        </section>
+
+        <!-- 3.5. 시티 에이전트 대시보드 (City Agent Dashboard) -->
+        <section class="creator-section agent-dashboard-section" style="margin-bottom: 1rem;">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-cyan); -webkit-text-fill-color: initial; background: none; display: flex; align-items: center; gap: 0.5rem;">
+            🤖 City Agent (시티 에이전트)
+          </h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.8rem;">
+            BIM, IFC 4.3 토목 및 플랜트 공학 지식을 학습한 에이전트가 가상 도시를 자율 시공하고 진화시킵니다.
+          </p>
+
+          <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.15); border-radius: 6px; padding: 0.6rem; margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.72rem; color: var(--lyt-text-muted); font-weight: bold;">자율 도시 창조 모드</span>
+              <label class="switch-container" style="position: relative; display: inline-block; width: 34px; height: 20px;">
+                <input type="checkbox" id="agent-auto-mode" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="switch-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; border: 1px solid #44px;"></span>
+              </label>
+            </div>
+
+            <!-- 3대 공학 모듈 활성 램프 HUD -->
+            <div class="module-hud-grid" style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem; font-size: 0.7rem;">
+              <div id="module-lamp-structural" class="module-lamp lamp-dormant" style="flex: 1; text-align: center; padding: 0.35rem 0.2rem; border-radius: 4px; font-weight: bold; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); color: var(--lyt-text-muted);">
+                🏗️ 건축
+              </div>
+              <div id="module-lamp-civil" class="module-lamp lamp-dormant" style="flex: 1; text-align: center; padding: 0.35rem 0.2rem; border-radius: 4px; font-weight: bold; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); color: var(--lyt-text-muted);">
+                🛣️ 토목
+              </div>
+              <div id="module-lamp-plant" class="module-lamp lamp-dormant" style="flex: 1; text-align: center; padding: 0.35rem 0.2rem; border-radius: 4px; font-weight: bold; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); color: var(--lyt-text-muted);">
+                ⚡ 설비
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; margin-bottom: 0.4rem;">
+              <span class="agent-led led-dormant" id="agent-led" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; transition: all 0.3s;"></span>
+              <span style="color: var(--lyt-text-muted);">Status:</span>
+              <strong id="agent-status-text" style="color: #fff; font-family: var(--font-mono);">DORMANT</strong>
+            </div>
+
+            <div style="font-size: 0.72rem; margin-bottom: 0.4rem; color: var(--lyt-text-muted);">
+              <span>Target Goal:</span>
+              <div id="agent-goal-text" style="color: var(--lyt-accent-yellow); font-family: var(--font-mono); margin-top: 0.1rem; word-break: break-all;">Plan future smart infrastructure</div>
+            </div>
+
+            <!-- 학습 버퍼량 및 LOD 공학 사양 HUD -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem;">
+              <div>
+                <span style="color: var(--lyt-text-muted);">Memory:</span>
+                <strong id="agent-memory-text" style="color: var(--lyt-accent-yellow); font-family: var(--font-mono);">0/20</strong>
+              </div>
+              <div>
+                <span style="color: var(--lyt-text-muted);">Standard:</span>
+                <strong id="agent-lod-text" style="color: var(--lyt-accent-cyan); font-family: var(--font-mono);">LOD 300</strong>
+              </div>
+            </div>
+
+            <div id="agent-current-prompt" style="font-size: 0.7rem; color: var(--lyt-text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.35rem; margin-top: 0.35rem;">
+              Waiting for next design tick...
+            </div>
+          </div>
+
+          <button class="btn-action" id="btn-agent-force" style="width: 100%; border-color: var(--lyt-accent-cyan); color: var(--lyt-accent-cyan); font-weight: bold; background: rgba(0, 240, 255, 0.05); padding: 0.45rem;">
+            ⚡ 자율 창조 명령 강제 실행 (Force Build)
+          </button>
+        </section>
+
+        <!-- 4. 실시간 에이전트 자율 거래 및 활동 로그 -->
+        <section class="creator-section" style="margin-bottom: 0;">
+          <h3>Autonomous Agent Activity Log</h3>
+          <div class="agent-log" id="agent-log-container">
+            <!-- 실시간 시스템 및 에이전트 행위 로그가 마운트됩니다 -->
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- ==========================================================================
+         RIGHT: 가상현실 시각화(Kernel Based) 및 콘텐츠 마켓플레이스
+         ========================================================================== -->
+    <main class="vr-workspace">
+      <!-- 3D 시각화 구동 장치 -->
+      <div id="vr-canvas-container">
+        <div class="viewport-badge">
+          <span class="badge-title" id="active-asset-title">Active Environment: Urban Metropolis</span>
+          <span class="badge-status" id="active-program-status">Interactive Physics Engine Enabled</span>
+          <span class="badge-tip">Tip: 3D 화면 속 문, 가로등, 벤치, 가구를 직접 클릭해보세요!</span>
+        </div>
+        <!-- 💡 실시간 FPS 카운터 및 튜닝 패널 -->
+        <div id="fps-counter" style="
+          position: absolute;
+          top: 1rem;
+          left: 1rem;
+          background: rgba(8, 8, 16, 0.85);
+          border: 1px solid var(--lyt-accent-cyan);
+          border-radius: 8px;
+          backdrop-filter: blur(8px);
+          padding: 0.4rem 0.8rem;
+          color: #fff;
+          font-family: var(--font-mono, 'DM Mono', monospace);
+          font-size: 0.82rem;
+          z-index: 100;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          pointer-events: none;
+        ">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #00FFCC; box-shadow: 0 0 6px #00FFCC;" id="fps-dot"></span>
+          <span>FPS: <strong id="fps-value" style="color: #00FFCC;">60.0</strong></span>
+          <span id="fps-status" style="font-size: 0.72rem; color: rgba(255,255,255,0.4);">OPTIMIZED</span>
+        </div>
+
+        <!-- 💡 뷰포트 내 즉각적인 플로팅 공간 Clear 버튼 및 시네마틱 뷰 토글 버튼 추가 -->
+        <button id="btn-viewport-clear" class="btn-action" style="position: absolute; top: 1rem; right: 1rem; border-color: var(--lyt-accent-purple); color: var(--lyt-accent-purple); background: rgba(12, 12, 18, 0.9); backdrop-filter: blur(8px); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; cursor: pointer; transition: all 0.2s;">공간 Clear 🧹</button>
+        <button id="btn-viewport-cinematic" class="btn-action" style="position: absolute; top: 1rem; right: 8.5rem; border-color: var(--lyt-accent-cyan); color: var(--lyt-accent-cyan); background: rgba(12, 12, 18, 0.9); backdrop-filter: blur(8px); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; cursor: pointer; transition: all 0.2s;">🎥 시네마틱 뷰: ON</button>
+        <button id="btn-viewport-zoomfit" class="btn-action" style="position: absolute; top: 1rem; right: 18rem; border-color: #FFD700; color: #FFD700; background: rgba(12, 12, 18, 0.9); backdrop-filter: blur(8px); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; cursor: pointer; transition: all 0.2s;" title="씬 전체를 카메라 뷰에 맞춤">⊡ Zoom Fit</button>
+
+        <!-- 🤖 City Agent 생성 버튼 + 마지막 오브젝트 Zoom 버튼 (2번째 행) -->
+        <button id="btn-agent-build" style="
+          position: absolute; top: 3.8rem; right: 1rem;
+          background: linear-gradient(135deg, rgba(181,126,220,0.18), rgba(0,240,255,0.08));
+          border: 1px solid rgba(181,126,220,0.6);
+          color: #B57EDC; font-size: 0.82rem; font-weight: bold;
+          padding: 0.5rem 1.2rem; border-radius: 6px;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 14px rgba(181,126,220,0.15);
+          z-index: 100; cursor: pointer; transition: all 0.25s;
+          letter-spacing: 0.03em;
+        " title="City Agent가 Zero로부터 사물을 생성합니다">🤖 City Agent 생성</button>
+
+        <button id="btn-zoom-last" style="
+          position: absolute; top: 3.8rem; right: 12.5rem;
+          background: rgba(12, 12, 18, 0.9);
+          border: 1px solid #555;
+          color: #555; font-size: 0.82rem; font-weight: bold;
+          padding: 0.5rem 1.2rem; border-radius: 6px;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          z-index: 100; cursor: not-allowed; transition: all 0.25s;
+          opacity: 0.4; letter-spacing: 0.03em;
+        " title="City Agent가 마지막으로 생성한 사물로 카메라 이동">📸 Zoom to Last</button>
+
+        <!-- 🏗️ 공정 타임라인 HUD — IFC IfcTask Construction Scheduling 기반 -->
+        <div id="construction-hud" style="
+          position: absolute;
+          bottom: 1.2rem;
+          right: 1.2rem;
+          width: 280px;
+          background: rgba(8, 8, 16, 0.82);
+          border: 1px solid rgba(0, 255, 204, 0.22);
+          border-radius: 12px;
+          backdrop-filter: blur(16px);
+          padding: 0.9rem 1rem;
+          z-index: 90;
+          font-family: var(--font-mono, 'DM Mono', monospace);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(0,255,204,0.06);
+          pointer-events: none;
+        ">
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.7rem;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#00FFCC;box-shadow:0 0 6px #00FFCC;display:inline-block;animation:pulse 1.5s ease-in-out infinite;"></span>
+            <span style="font-size:0.72rem;color:#00FFCC;letter-spacing:0.05em;">IFC IfcTask — 건설 공정 현황</span>
+          </div>
+          <div id="hud-tasks"></div>
+          <div style="margin-top:0.6rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.5rem;display:flex;justify-content:space-between;font-size:0.65rem;color:rgba(255,255,255,0.3);">
+            <span>buildingSMART IFC4.3 IfcTask</span>
+            <span id="hud-overall">전체 0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 스마트 컨트랙트 마켓플레이스 -->
+
+      <section class="market-section">
+        <div class="market-header">
+          <h2 style="margin: 0; background: none; -webkit-text-fill-color: var(--lyt-accent-yellow); font-size: 1.15rem;">
+            Autonomous Creator Marketplace
+          </h2>
+          <span style="font-size: 0.75rem; color: var(--lyt-text-muted);">
+            P2P 거래소 (User Wallet ↔ City Agent autonomous address)
+          </span>
+        </div>
+
+        <!-- 🤖 City Agent 크리에이터 프로필 배너 -->
+        <div id="city-agent-profile" style="
+          display: flex; align-items: center; gap: 0.8rem;
+          padding: 0.6rem 1.2rem;
+          background: linear-gradient(90deg, rgba(181,126,220,0.08) 0%, rgba(0,240,255,0.04) 100%);
+          border-bottom: 1px solid rgba(181,126,220,0.2);
+        ">
+          <!-- 아바타 아이콘 -->
+          <div style="
+            width: 38px; height: 38px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #B57EDC, #050510);
+            border: 2px solid rgba(181,126,220,0.7);
+            box-shadow: 0 0 12px rgba(181,126,220,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+          ">🤖</div>
+
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+              <span style="font-weight: bold; font-size: 0.88rem; color: #fff;">City Agent</span>
+              <span style="
+                background: linear-gradient(90deg, #B57EDC, #00F0FF);
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                font-size: 0.65rem; font-weight: bold; border: 1px solid rgba(181,126,220,0.4);
+                border-radius: 3px; padding: 0.05rem 0.35rem; letter-spacing: 0.04em;
+                background-clip: text;
+              ">✦ VERIFIED CREATOR</span>
+              <span style="
+                background: rgba(0,240,255,0.1); color: var(--lyt-accent-cyan);
+                font-size: 0.6rem; font-weight: bold; border: 1px solid rgba(0,240,255,0.25);
+                border-radius: 3px; padding: 0.05rem 0.3rem; letter-spacing: 0.04em;
+              ">LOD 300</span>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--lyt-text-muted); margin-top: 0.15rem;">
+              BIM · IFC 4.3 · Civil · Plant — 자율 공학 설계 AI 크리에이터
+            </div>
+          </div>
+
+          <div style="text-align: right; flex-shrink: 0;">
+            <div style="font-size: 0.65rem; color: var(--lyt-text-muted);">총 제작</div>
+            <div id="city-agent-asset-count" style="font-size: 0.95rem; font-weight: bold; color: var(--lyt-accent-purple); font-family: var(--font-mono);">0</div>
+            <div style="font-size: 0.6rem; color: var(--lyt-text-muted);">에셋</div>
+          </div>
+        </div>
+
+        <div class="market-list" id="marketplace-assets">
+          <!-- 자산 카드가 동적으로 주입됩니다 -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 커스텀 알림 박스 -->
+  <div id="notification-box">
+    <h4 style="margin: 0 0 0.3rem 0; color: var(--lyt-accent-cyan); background: none; -webkit-text-fill-color: initial;">알림</h4>
+    <p id="notification-text" style="font-size: 0.82rem; margin: 0; color: #fff;"></p>
+  </div>
+
+  <!-- 모듈 진입점 스크립트 로드 -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,553 @@
+/* ==========================================================================
+   1. 핵심 CSS 변수 구조 설계 (LYT Mode & Cyberchiken 테마)
+   ========================================================================== */
+:root {
+  --lyt-bg-main: #060608;
+  --lyt-bg-pane: #0c0c12;
+  --lyt-bg-card: #14141f;
+  --lyt-bg-input: #08080d;
+  
+  --lyt-accent-yellow: #FFD700; /* Cyberpunk Yellow */
+  --lyt-accent-purple: #B57EDC; /* Synthwave Purple */
+  --lyt-accent-cyan: #00F0FF;   /* Tech Cyan */
+  --lyt-accent-white: #FFFFFF;
+  
+  --lyt-text-main: #E2E2E9;
+  --lyt-text-muted: #7d7d93;
+  
+  --font-body: 'Avenir Next', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --line-height-tight: 1.35; /* LYT 철학: 높은 정보 밀도를 위한 좁은 행간 */
+}
+
+/* ==========================================================================
+   2. 글로벌 레이아웃 및 뼈대
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--lyt-bg-main);
+  color: var(--lyt-text-main);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: var(--line-height-tight);
+  overflow: hidden;
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.app-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* 좌측: 제어 및 저작 도구 패널 (Sliding Panes 스타일) */
+.control-pane {
+  width: 480px;
+  min-width: 450px;
+  background-color: var(--lyt-bg-pane);
+  border-right: 1px solid #1f1f2e;
+  border-left: 4px solid var(--lyt-accent-yellow); /* Active Note Indicator */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 10px 0 30px rgba(0,0,0,0.6);
+  z-index: 10;
+}
+
+/* 우측: 3D 가상현실 뷰포트 & 거래 시장 */
+.vr-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ==========================================================================
+   3. 타이포그래피 및 인라인 장식 (LYT Mode Specifics)
+   ========================================================================== */
+h1, h2, h3, h4 {
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+h1 { background-image: linear-gradient(90deg, var(--lyt-accent-yellow), #FF8C00); font-size: 1.6rem; margin: 1.5rem 1.5rem 0.5rem 1.5rem; }
+h2 { background-image: linear-gradient(90deg, #FF8C00, var(--lyt-accent-purple)); font-size: 1.25rem; margin: 1.2rem 0 0.6rem 0; }
+h3 { background-image: linear-gradient(90deg, var(--lyt-accent-cyan), var(--lyt-accent-purple)); font-size: 1.05rem; margin-bottom: 0.4rem; }
+
+p {
+  font-size: 0.9rem;
+  color: var(--lyt-text-main);
+  margin-bottom: 0.8rem;
+}
+
+/* 하이라이트 발광 효과 */
+mark {
+  background: transparent;
+  color: var(--lyt-accent-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  font-weight: bold;
+}
+
+strong {
+  color: var(--lyt-accent-yellow);
+}
+
+/* ==========================================================================
+   4. 인터페이스 컴포넌트 (AI 생성 및 경제 시뮬레이션 관련)
+   ========================================================================== */
+/* 스크롤 가능한 정보 컨테이너 */
+.pane-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+.pane-content::-webkit-scrollbar { width: 6px; }
+.pane-content::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 3px; }
+
+/* 가상 자산 지갑 상태 카드 */
+.wallet-status {
+  background-color: var(--lyt-bg-card);
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.wallet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+.wallet-info {
+  background: var(--lyt-bg-input);
+  padding: 0.6rem;
+  border-radius: 4px;
+  border: 1px solid #111;
+}
+.wallet-info span {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--lyt-text-muted);
+  margin-bottom: 0.2rem;
+}
+.wallet-info div {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+.user-address { color: var(--lyt-accent-cyan); }
+.agent-address { color: var(--lyt-accent-purple); }
+
+/* 공간 환경 셀렉터 */
+.env-selector {
+  background-color: var(--lyt-bg-card);
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.env-btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.btn-env {
+  background: var(--lyt-bg-input);
+  color: var(--lyt-text-muted);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-env.active {
+  color: var(--lyt-accent-yellow);
+  border-color: var(--lyt-accent-yellow);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+/* 저작 도구 / AI 프롬프트 콘솔 */
+.creator-section {
+  background-color: var(--lyt-bg-card);
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.prompt-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+input[type="text"] {
+  flex: 1;
+  background: var(--lyt-bg-input);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.6rem;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--lyt-accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
+.btn-action {
+  background: transparent;
+  color: var(--lyt-accent-cyan);
+  border: 1px solid var(--lyt-accent-cyan);
+  padding: 0.6rem 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+.btn-action:hover {
+  background: var(--lyt-accent-cyan);
+  color: var(--lyt-bg-main);
+  box-shadow: 0 0 10px rgba(0,240,255,0.4);
+}
+
+/* 인터랙션 인스펙터 (선택 사물 정보) */
+.inspector-section {
+  background-color: var(--lyt-bg-card);
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.inspector-field {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 0.3rem;
+}
+.inspector-label { color: var(--lyt-text-muted); }
+.inspector-value { font-weight: bold; color: var(--lyt-accent-cyan); }
+
+/* 실시간 실행되는 가상 가속 프로그램 코드 뷰어 */
+.code-block {
+  background: #08080c;
+  border-radius: 6px;
+  padding: 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #a9ffb4;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #222;
+  margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   5. 가상 마켓플레이스 레이아웃 & 카드
+   ========================================================================== */
+.market-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+  padding: 0.5rem 1.2rem;
+  background: var(--lyt-bg-pane);
+}
+.market-header h2 {
+  font-size: 1.0rem !important;
+}
+.market-section {
+  flex: 0.8; /* 거래소 라인을 위로 확 끌어올려 높이 40% 비중 확보 */
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #1f1f2e;
+}
+.market-list {
+  padding: 0.8rem 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.8rem;
+  overflow-y: auto;
+  flex: 1; /* 제한된 높이를 지우고 마켓 영역 전체를 시원하게 채움 */
+  background: rgba(6, 6, 8, 0.95);
+}
+.asset-card {
+  background: var(--lyt-bg-card);
+  border: 1px solid #222;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+.asset-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--lyt-accent-purple);
+  box-shadow: 0 4px 10px rgba(181, 126, 220, 0.15);
+}
+.asset-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--lyt-text-muted);
+  margin-bottom: 0.3rem;
+}
+.asset-creator {
+  color: var(--lyt-accent-yellow);
+  font-weight: bold;
+}
+.asset-title {
+  font-weight: bold;
+  font-size: 0.88rem;
+  margin-bottom: 0.3rem;
+}
+.asset-program-desc {
+  font-size: 0.72rem;
+  color: var(--lyt-text-muted);
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  height: 28px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.asset-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #222;
+  padding-top: 0.4rem;
+  margin-top: 0.3rem;
+}
+.asset-price {
+  font-family: var(--font-mono);
+  color: var(--lyt-accent-cyan);
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.btn-buy {
+  background: transparent;
+  border: 1px solid var(--lyt-accent-purple);
+  color: var(--lyt-accent-purple);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-buy:hover {
+  background: var(--lyt-accent-purple);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(181, 126, 220, 0.4);
+}
+
+/* 시스템 에이전트 로그 콘솔 */
+.agent-log {
+  background: #040406;
+  border: 1px solid #1a1a24;
+  border-radius: 6px;
+  padding: 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  height: 120px;
+  overflow-y: auto;
+}
+.log-line {
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid #111;
+  padding-bottom: 0.2rem;
+  line-height: 1.25;
+}
+.log-time { color: var(--lyt-text-muted); }
+.log-tag-agent { color: var(--lyt-accent-purple); font-weight: bold; }
+.log-tag-user { color: var(--lyt-accent-cyan); font-weight: bold; }
+.log-tag-sys { color: var(--lyt-accent-yellow); }
+
+/* ==========================================================================
+   6. 3D 뷰포트 영역 레이아웃
+   ========================================================================= */
+#vr-canvas-container {
+  flex: 1.2; /* 3D 뷰포트 높이 비율을 양보하여 거래소를 위로 밀어 올림 */
+  position: relative;
+  background: radial-gradient(circle at center, #11111a 0%, #030305 100%);
+  cursor: grab;
+}
+#vr-canvas-container:active { cursor: grabbing; }
+
+/* 뷰포트 오버레이 알림창 */
+.viewport-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(12, 12, 18, 0.9);
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.badge-title { font-weight: bold; color: var(--lyt-accent-yellow); }
+.badge-status { color: var(--lyt-accent-cyan); font-family: var(--font-mono); }
+.badge-tip { color: var(--lyt-text-muted); font-size: 0.72rem; }
+
+/* 알림용 커스텀 모달 UI */
+#notification-box {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--lyt-bg-card);
+  border: 1px solid var(--lyt-accent-cyan);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 5px 20px rgba(0, 240, 255, 0.2);
+  z-index: 1000;
+  display: none;
+  animation: slideIn 0.3s ease-out;
+  max-width: 320px;
+}
+@keyframes slideIn {
+  from { transform: translateX(120%); }
+  to { transform: translateX(0); }
+}
+
+/* 반응형 모바일 최적화 */
+@media (max-width: 1024px) {
+  .app-layout { flex-direction: column; }
+  .control-pane { width: 100%; min-width: 100%; height: auto; max-height: 50vh; }
+  .vr-workspace { flex: 1; height: 50vh; }
+  .market-list { max-height: 180px; }
+}
+
+/* ==========================================================================
+   7. 가상 미래 도시 창조자 대시보드 (Virtual Future City Creator CSS)
+   ========================================================================== */
+.switch-container {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+.switch-container input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #222;
+  border: 1px solid #444;
+  transition: .3s;
+  border-radius: 20px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--lyt-text-muted);
+  transition: .3s;
+  border-radius: 50%;
+}
+.switch-container input:checked + .switch-slider {
+  background-color: rgba(0, 240, 255, 0.1);
+  border-color: var(--lyt-accent-cyan);
+}
+.switch-container input:checked + .switch-slider:before {
+  transform: translateX(14px);
+  background-color: var(--lyt-accent-cyan);
+  box-shadow: 0 0 6px var(--lyt-accent-cyan);
+}
+
+.agent-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+.led-dormant {
+  background-color: var(--lyt-text-muted);
+  box-shadow: 0 0 4px var(--lyt-text-muted);
+}
+.led-thinking {
+  background-color: var(--lyt-accent-yellow);
+  box-shadow: 0 0 8px var(--lyt-accent-yellow);
+  animation: pulse-led 1s infinite alternate;
+}
+.led-compiling {
+  background-color: var(--lyt-accent-purple);
+  box-shadow: 0 0 8px var(--lyt-accent-purple);
+  animation: pulse-led 0.4s infinite alternate;
+}
+.led-built {
+  background-color: #00FF99;
+  box-shadow: 0 0 10px #00FF99;
+}
+
+@keyframes pulse-led {
+  from { opacity: 0.4; }
+  to { opacity: 1.0; }
+}
+
+/* ==========================================================================
+   8. 시티 에이전트 모듈 전광판 미래형 스타일 (City Agent HUD Styles)
+   ========================================================================== */
+.module-lamp {
+  font-family: var(--font-body);
+  transition: all 0.3s ease;
+}
+.module-lamp.lamp-dormant {
+  color: var(--lyt-text-muted) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: none !important;
+}
+.module-lamp.lamp-active-structural {
+  color: #fff !important;
+  background: rgba(255, 140, 0, 0.15) !important;
+  border-color: #FF8C00 !important;
+  box-shadow: 0 0 10px rgba(255, 140, 0, 0.3) !important;
+}
+.module-lamp.lamp-active-civil {
+  color: #fff !important;
+  background: rgba(0, 240, 255, 0.15) !important;
+  border-color: var(--lyt-accent-cyan) !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3) !important;
+}
+.module-lamp.lamp-active-plant {
+  color: #fff !important;
+  background: rgba(181, 126, 220, 0.15) !important;
+  border-color: var(--lyt-accent-purple) !important;
+  box-shadow: 0 0 10px rgba(181, 126, 220, 0.3) !important;
+}

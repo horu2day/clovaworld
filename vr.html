@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberchiken VR Engine & Autonomous Agent Market</title>
+    <!-- 폰트 로드: DM Mono 및 Inter (Avenir Next 대용) -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- 3D 렌더링 라이브러리 (Three.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* ==========================================================================
+           1. 핵심 CSS 변수 구조 설계 (LYT Mode & Cyberchiken 테마)
+           ========================================================================== */
+        :root {
+            --lyt-bg-main: #060608;
+            --lyt-bg-pane: #0c0c12;
+            --lyt-bg-card: #14141f;
+            --lyt-bg-input: #08080d;
+            
+            --lyt-accent-yellow: #FFD700; /* Cyberpunk Yellow */
+            --lyt-accent-purple: #B57EDC; /* Synthwave Purple */
+            --lyt-accent-cyan: #00F0FF;   /* Tech Cyan */
+            --lyt-accent-white: #FFFFFF;
+            
+            --lyt-text-main: #E2E2E9;
+            --lyt-text-muted: #7d7d93;
+            
+            --font-body: 'Avenir Next', 'Inter', -apple-system, sans-serif;
+            --font-mono: 'DM Mono', monospace;
+            --line-height-tight: 1.35; /* LYT 철학: 높은 정보 밀도를 위한 좁은 행간 */
+        }
+
+        /* ==========================================================================
+           2. 글로벌 레이아웃 및 뼈대
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--lyt-bg-main);
+            color: var(--lyt-text-main);
+            font-family: var(--font-body);
+            font-weight: 400;
+            line-height: var(--line-height-tight);
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .app-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 좌측: 제어 및 저작 도구 패널 (Sliding Panes 스타일) */
+        .control-pane {
+            width: 480px;
+            min-width: 450px;
+            background-color: var(--lyt-bg-pane);
+            border-right: 1px solid #1f1f2e;
+            border-left: 4px solid var(--lyt-accent-yellow); /* Active Note Indicator */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        /* 우측: 3D 가상현실 뷰포트 & 거래 시장 */
+        .vr-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ==========================================================================
+           3. 타이포그래피 및 인라인 장식 (LYT Mode Specifics)
+           ========================================================================== */
+        h1, h2, h3, h4 {
+            font-weight: 900;
+            line-height: 1.25;
+            letter-spacing: -0.5px;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        h1 { background-image: linear-gradient(90deg, var(--lyt-accent-yellow), #FF8C00); font-size: 1.6rem; margin: 1.5rem 1.5rem 0.5rem 1.5rem; }
+        h2 { background-image: linear-gradient(90deg, #FF8C00, var(--lyt-accent-purple)); font-size: 1.25rem; margin: 1.2rem 0 0.6rem 0; }
+        h3 { background-image: linear-gradient(90deg, var(--lyt-accent-cyan), var(--lyt-accent-purple)); font-size: 1.05rem; margin-bottom: 0.4rem; }
+
+        p {
+            font-size: 0.9rem;
+            color: var(--lyt-text-main);
+            margin-bottom: 0.8rem;
+        }
+
+        /* 하이라이트 발광 효과 */
+        mark {
+            background: transparent;
+            color: var(--lyt-accent-cyan);
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+            font-weight: bold;
+        }
+
+        strong {
+            color: var(--lyt-accent-yellow);
+        }
+
+        /* ==========================================================================
+           4. 인터페이스 컴포넌트 (AI 생성 및 경제 시뮬레이션 관련)
+           ========================================================================== */
+        /* 스크롤 가능한 정보 컨테이너 */
+        .pane-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+        }
+        .pane-content::-webkit-scrollbar { width: 6px; }
+        .pane-content::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 3px; }
+
+        /* 가상 자산 지갑 상태 카드 */
+        .wallet-status {
+            background-color: var(--lyt-bg-card);
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .wallet-info {
+            background: var(--lyt-bg-input);
+            padding: 0.6rem;
+            border-radius: 4px;
+            border: 1px solid #111;
+        }
+        .wallet-info span {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--lyt-text-muted);
+            margin-bottom: 0.2rem;
+        }
+        .wallet-info div {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .user-address { color: var(--lyt-accent-cyan); }
+        .agent-address { color: var(--lyt-accent-purple); }
+
+        /* 공간 환경 셀렉터 */
+        .env-selector {
+            background-color: var(--lyt-bg-card);
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .env-btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+        }
+        .btn-env {
+            background: var(--lyt-bg-input);
+            color: var(--lyt-text-muted);
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-env.active {
+            color: var(--lyt-accent-yellow);
+            border-color: var(--lyt-accent-yellow);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        /* 저작 도구 / AI 프롬프트 콘솔 */
+        .creator-section {
+            background-color: var(--lyt-bg-card);
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .prompt-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+        }
+        input[type="text"] {
+            flex: 1;
+            background: var(--lyt-bg-input);
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 0.6rem;
+            color: #fff;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--lyt-accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+        }
+        .btn-action {
+            background: transparent;
+            color: var(--lyt-accent-cyan);
+            border: 1px solid var(--lyt-accent-cyan);
+            padding: 0.6rem 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            background: var(--lyt-accent-cyan);
+            color: var(--lyt-bg-main);
+            box-shadow: 0 0 10px rgba(0,240,255,0.4);
+        }
+
+        /* 인터랙션 인스펙터 (선택 사물 정보) */
+        .inspector-section {
+            background-color: var(--lyt-bg-card);
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .inspector-field {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            border-bottom: 1px solid #222;
+            padding-bottom: 0.3rem;
+        }
+        .inspector-label { color: var(--lyt-text-muted); }
+        .inspector-value { font-weight: bold; color: var(--lyt-accent-cyan); }
+
+        /* 실시간 실행되는 가상 가속 프로그램 코드 뷰어 */
+        .code-block {
+            background: #08080c;
+            border-radius: 6px;
+            padding: 0.8rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: #a9ffb4;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #222;
+            margin-top: 0.5rem;
+        }
+
+        /* ==========================================================================
+           5. 가상 마켓플레이스 레이아웃 & 카드
+           ========================================================================== */
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+            padding: 0.8rem 1.5rem;
+            background: var(--lyt-bg-pane);
+        }
+        .market-list {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.2rem;
+            overflow-y: auto;
+            max-height: 320px;
+            background: rgba(6, 6, 8, 0.95);
+            border-top: 1px solid #222;
+        }
+        .asset-card {
+            background: var(--lyt-bg-card);
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .asset-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--lyt-accent-purple);
+            box-shadow: 0 5px 15px rgba(181, 126, 220, 0.15);
+        }
+        .asset-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--lyt-text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .asset-creator {
+            color: var(--lyt-accent-yellow);
+            font-weight: bold;
+        }
+        .asset-title {
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+        }
+        .asset-program-desc {
+            font-size: 0.78rem;
+            color: var(--lyt-text-muted);
+            line-height: 1.35;
+            margin-bottom: 0.8rem;
+            height: 36px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .asset-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #222;
+            padding-top: 0.6rem;
+            margin-top: 0.5rem;
+        }
+        .asset-price {
+            font-family: var(--font-mono);
+            color: var(--lyt-accent-cyan);
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+        .btn-buy {
+            background: transparent;
+            border: 1px solid var(--lyt-accent-purple);
+            color: var(--lyt-accent-purple);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-buy:hover {
+            background: var(--lyt-accent-purple);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(181, 126, 220, 0.4);
+        }
+
+        /* 시스템 에이전트 로그 콘솔 */
+        .agent-log {
+            background: #040406;
+            border: 1px solid #1a1a24;
+            border-radius: 6px;
+            padding: 0.8rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            height: 120px;
+            overflow-y: auto;
+        }
+        .log-line {
+            margin-bottom: 0.4rem;
+            border-bottom: 1px solid #111;
+            padding-bottom: 0.2rem;
+            line-height: 1.25;
+        }
+        .log-time { color: var(--lyt-text-muted); }
+        .log-tag-agent { color: var(--lyt-accent-purple); font-weight: bold; }
+        .log-tag-user { color: var(--lyt-accent-cyan); font-weight: bold; }
+        .log-tag-sys { color: var(--lyt-accent-yellow); }
+
+        /* ==========================================================================
+           6. 3D 뷰포트 영역 레이아웃
+           ========================================================================= */
+        #vr-canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #11111a 0%, #030305 100%);
+            cursor: grab;
+        }
+        #vr-canvas-container:active { cursor: grabbing; }
+
+        /* 뷰포트 오버레이 알림창 */
+        .viewport-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(12, 12, 18, 0.9);
+            border: 1px solid #222;
+            border-radius: 4px;
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .badge-title { font-weight: bold; color: var(--lyt-accent-yellow); }
+        .badge-status { color: var(--lyt-accent-cyan); font-family: var(--font-mono); }
+        .badge-tip { color: var(--lyt-text-muted); font-size: 0.72rem; }
+
+        /* 알림용 커스텀 모달 UI */
+        #notification-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--lyt-bg-card);
+            border: 1px solid var(--lyt-accent-cyan);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 5px 20px rgba(0, 240, 255, 0.2);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            max-width: 320px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+        }
+
+        /* 반응형 모바일 최적화 */
+        @media (max-width: 1024px) {
+            .app-layout { flex-direction: column; }
+            .control-pane { width: 100%; min-width: 100%; height: auto; max-height: 50vh; }
+            .vr-workspace { flex: 1; height: 50vh; }
+            .market-list { max-height: 180px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+        <!-- ==========================================================================
+             LEFT: 지식 베이스, AI 저작도구 및 에이전트 인터페이스 (LYT-Cyberchiken)
+             ========================================================================== -->
+        <aside class="control-pane">
+            <h1>CHICKEN VR AUTHORING</h1>
+            
+            <div class="pane-content">
+                <!-- 아키텍처 핵심 정립 영역 -->
+                <p style="font-size: 0.82rem; color: var(--lyt-text-muted); margin-bottom: 1rem;">
+                    <mark>지오메트릭 커널(Kernel)</mark> 기반 렌더러가 구축한 물리 가상현실 공간입니다. 3D 사물(Contents)과 상호작용 프로그램(Program)이 실시간 작동하며 P2P 거래를 지원합니다.
+                </p>
+
+                <!-- 0. 가상 환경 셀렉터 (신규 추가: 도시 / 실내 / 시골) -->
+                <section class="env-selector">
+                    <h3 style="margin-top: 0; color: var(--lyt-accent-yellow); -webkit-text-fill-color: initial; background: none;">Select VR Environment</h3>
+                    <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin: 0;">가상현실의 핵심 테마 환경을 즉각적으로 변경합니다.</p>
+                    <div class="env-btn-group">
+                        <button class="btn-env active" onclick="switchEnvironment('urban')">도시 Metropolis</button>
+                        <button class="btn-env" onclick="switchEnvironment('indoor')">실내 Cozy Room</button>
+                        <button class="btn-env" onclick="switchEnvironment('rural')">시골 Countryside</button>
+                    </div>
+                </section>
+
+                <!-- 1. 지갑 시스템 (사용자 vs AI 에이전트) -->
+                <section class="wallet-status">
+                    <h3 style="margin-top: 0; color: var(--lyt-accent-cyan); -webkit-text-fill-color: initial; background: none;">Decentralized Autonomous Wallets</h3>
+                    <div class="wallet-grid">
+                        <div class="wallet-info">
+                            <span>User Wallet Address</span>
+                            <div class="user-address">0xUser...F8a1</div>
+                            <span style="margin-top:0.3rem;">Balance</span>
+                            <div id="user-balance" style="color:#fff;">10.00 CHKN</div>
+                        </div>
+                        <div class="wallet-info">
+                            <span>Agent Wallet Address</span>
+                            <div class="agent-address">0xAgent...3c99</div>
+                            <span style="margin-top:0.3rem;">Balance</span>
+                            <div id="agent-balance" style="color:#fff;">4.50 CHKN</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. 인터랙션 인스펙터 (선택 사물 정보 및 원격 조종) -->
+                <section class="inspector-section">
+                    <h3 style="margin-top: 0; color: var(--lyt-accent-purple); -webkit-text-fill-color: initial; background: none;">Interaction Inspector</h3>
+                    <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">뷰포트 내의 물리 사물을 클릭하여 정보를 인스펙팅하고 상호작용합니다.</p>
+                    <div class="inspector-field">
+                        <span class="inspector-label">사물명 (Entity)</span>
+                        <span class="inspector-value" id="inspect-name">없음 (화면 내 사물 클릭)</span>
+                    </div>
+                    <div class="inspector-field">
+                        <span class="inspector-label">동작 상태 (State)</span>
+                        <span class="inspector-value" id="inspect-state">-</span>
+                    </div>
+                    <div class="inspector-field" style="border-bottom: none; margin-bottom: 0;">
+                        <span class="inspector-label">인터랙션 액션</span>
+                        <button class="btn-action" id="btn-trigger-action" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="triggerSelectedObjectAction()">물리 제어 실행</button>
+                    </div>
+                </section>
+
+                <!-- 3. AI 저작도구 (콘텐츠 & 프로그램 생성) -->
+                <section class="creator-section">
+                    <h3>AI Generation Console</h3>
+                    <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">새로운 가상 사물과 인터랙티브 스크립트를 AI 프롬프트 기반으로 절차적 민팅합니다.</p>
+                    
+                    <div class="prompt-input-wrapper">
+                        <input type="text" id="ai-prompt" placeholder="예: '신호등', '공원의 벤치', '시골 비닐하우스'" value="도심 속 가로등과 벤치">
+                        <button class="btn-action" onclick="generateProceduralAsset()">AI Build</button>
+                    </div>
+
+                    <h4 style="font-size: 0.75rem; margin-top: 0.8rem; color: var(--lyt-accent-yellow); -webkit-text-fill-color: initial; background: none;">Active Live Program Script</h4>
+                    <div class="code-block" id="program-code-view">
+// AI Generated Interactive Program
+function animate(mesh, time) {
+    mesh.rotation.y = time * 0.001;
+}
+                    </div>
+                </section>
+
+                <!-- 4. 실시간 에이전트 자율 거래 및 활동 로그 -->
+                <section class="creator-section" style="margin-bottom: 0;">
+                    <h3>Autonomous Agent Activity Log</h3>
+                    <div class="agent-log" id="agent-log-container">
+                        <div class="log-line">
+                            <span class="log-time">[15:35:10]</span> <span class="log-tag-sys">[System]</span> 3D 지오메트릭 커널 하드웨어 가속 기동 완료.
+                        </div>
+                        <div class="log-line">
+                            <span class="log-time">[15:35:12]</span> <span class="log-tag-agent">[Agent]</span> 'Cozy Room' 가구 레이아웃 분석 및 자율 최적화 완료.
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </aside>
+
+        <!-- ==========================================================================
+             RIGHT: 가상현실 시각화(Kernel Based) 및 콘텐츠 마켓플레이스
+             ========================================================================== -->
+        <main class="vr-workspace">
+            <!-- 3D 시각화 구동 장치 -->
+            <div id="vr-canvas-container">
+                <div class="viewport-badge">
+                    <span class="badge-title" id="active-asset-title">Active Environment: Urban Metropolis</span>
+                    <span class="badge-status" id="active-program-status">Interactive Physics Engine Enabled</span>
+                    <span class="badge-tip">Tip: 3D 화면 속 문, 가로등, 벤치, 가구를 직접 클릭해보세요!</span>
+                </div>
+            </div>
+
+            <!-- 스마트 컨트랙트 마켓플레이스 -->
+            <section style="display: flex; flex-direction: column;">
+                <div class="market-header">
+                    <h2 style="margin: 0; background: none; -webkit-text-fill-color: var(--lyt-accent-yellow); font-size: 1.15rem;">
+                        Autonomous Creator Marketplace
+                    </h2>
+                    <span style="font-size: 0.75rem; color: var(--lyt-text-muted);">
+                        P2P 거래소 (User Wallet ↔ Agent autonomous address)
+                    </span>
+                </div>
+
+                <div class="market-list" id="marketplace-assets">
+                    <!-- 자산 카드가 동적으로 주입됩니다 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 커스텀 알림 박스 -->
+    <div id="notification-box">
+        <h4 style="margin: 0 0 0.3rem 0; color: var(--lyt-accent-cyan); background: none; -webkit-text-fill-color: initial;">알림</h4>
+        <p id="notification-text" style="font-size: 0.82rem; margin: 0; color: #fff;"></p>
+    </div>
+
+    <!-- ==========================================================================
+         JAVASCRIPT LOGIC: Three.js 시각화, 물리적 인터랙션 및 분산 마켓 엔진
+         ========================================================================== -->
+    <script>
+        // 글로벌 상태 관리
+        let userBalance = 10.00;
+        let agentBalance = 4.50;
+        let currentEnvironment = 'urban'; // urban, indoor, rural
+        let selectedObject = null; // 인스펙터가 감지한 현재 선택 3D 객체
+        
+        // 가상 에셋 마켓 데이터 (컨텐츠 메쉬 정보 및 상호작용 프로그램 소스)
+        const assetsMarket = [
+            {
+                id: 'asset-door',
+                title: "Interactive Hinged Door",
+                creator: "Agent",
+                price: 1.50,
+                type: 'door',
+                description: "현실감 넘치는 문짝 B-Rep 지오메트리. 클릭 시 부드럽게 개폐 회전 작용을 수행하는 인터랙티브 프로그램 동봉.",
+                code: `// Hinged Door Action Program
+function animate(mesh, time) {
+    if (mesh.userData.isOpen) {
+        mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, Math.PI / 2, 0.1);
+    } else {
+        mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, 0, 0.1);
+    }
+}`
+            },
+            {
+                id: 'asset-computer',
+                title: "Cyber Workstation & Screen",
+                creator: "Agent",
+                price: 2.80,
+                type: 'computer',
+                description: "데스크톱 가구와 결합된 모니터 및 컴퓨터 시스템. 전원 토글 인터랙션에 응답하는 전자기성 쉐이더 프로그램 포함.",
+                code: `// Cyber Workstation Screen Glow Program
+function animate(mesh, time) {
+    const screen = mesh.getObjectByName('screen');
+    if (screen) {
+        if (mesh.userData.isOn) {
+            screen.material.emissiveIntensity = 1.0 + Math.sin(time * 0.01) * 0.3;
+        } else {
+            screen.material.emissiveIntensity = 0.05;
+        }
+    }
+}`
+            },
+            {
+                id: 'asset-cup',
+                title: "Anti-Gravity Ceramics Cup",
+                creator: "User",
+                price: 0.90,
+                type: 'cup',
+                description: "가구 위에 가볍게 얹어 상호작용 할 수 있는 주방 식기. 마우스 선택 시 공중에 붕 떠올라 던져지는 물리 아크 기능 탑재.",
+                code: `// Floating Gravity Cup Program
+function animate(mesh, time) {
+    if (mesh.userData.isFloating) {
+        mesh.position.y = 1.2 + Math.sin(time * 0.005) * 0.2;
+        mesh.rotation.z += 0.01;
+    } else {
+        mesh.position.y = 0.85; // Desk surface level
+        mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, 0.2);
+    }
+}`
+            },
+            {
+                id: 'asset-rural-house',
+                title: "Traditional Pavilion (정자)",
+                creator: "Agent",
+                price: 3.40,
+                type: 'pavilion',
+                description: "전통적 형태를 띈 쉼터 정자. 육각 기둥 배치 및 서스펜디드 고품질 텍스처 그림자 맵 적용.",
+                code: `// Pavilion Wind Breathing Program
+function animate(mesh, time) {
+    const roof = mesh.getObjectByName('roof');
+    if (roof) {
+        roof.position.y = 1.5 + Math.sin(time * 0.001) * 0.02; // 바람에 부드럽게 흔들리는 듯한 연출
+    }
+}`
+            }
+        ];
+
+        // Web Audio API 기반 오실레이터 사운드 시스템
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playSynthSound(freq, type, duration) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = type || 'sine';
+                osc.frequency.value = freq || 440;
+                
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn("오디오 플레이 백 실패:", e);
+            }
+        }
+
+        // ==========================================================================
+        // UI 유틸리티 및 디스플레이 바인딩
+        // ==========================================================================
+        function showNotification(text) {
+            const box = document.getElementById('notification-box');
+            document.getElementById('notification-text').innerText = text;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 3000);
+        }
+
+        function logEvent(sender, message) {
+            const container = document.getElementById('agent-log-container');
+            const timeStr = new Date().toTimeString().split(' ')[0];
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            
+            let tag = '<span class="log-tag-sys">[System]</span>';
+            if(sender === 'Agent') tag = '<span class="log-tag-agent">[Agent]</span>';
+            if(sender === 'User') tag = '<span class="log-tag-user">[User]</span>';
+            
+            logLine.innerHTML = `<span class="log-time">[${timeStr}]</span> ${tag} ${message}`;
+            container.appendChild(logLine);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateBalances() {
+            document.getElementById('user-balance').innerText = userBalance.toFixed(2) + " CHKN";
+            document.getElementById('agent-balance').innerText = agentBalance.toFixed(2) + " CHKN";
+        }
+
+        // ==========================================================================
+        // 3D VR Engine: Three.js 기반의 고성능 멀티-환경 시뮬레이터 구축
+        // ==========================================================================
+        const container = document.getElementById('vr-canvas-container');
+        const scene = new THREE.Scene();
+        
+        // 자연광 시뮬레이션을 위한 조명 구조 및 그림자 맵 활성화
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 1.5, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true; // 그림자 맵 활성화
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // 조명 시스템 설계
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+        scene.add(ambientLight);
+
+        // 태양광 역할을 할 방향성 조명 (그림자 생성 전용)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        sunLight.position.set(10, 18, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.bias = -0.001;
+        scene.add(sunLight);
+
+        // 네온 분위기 연출을 위한 포인트 조명들
+        const cyanNeon = new THREE.PointLight(0x00F0FF, 1.5, 15);
+        cyanNeon.position.set(-4, 3, -2);
+        scene.add(cyanNeon);
+
+        const purpleNeon = new THREE.PointLight(0xB57EDC, 1.5, 15);
+        purpleNeon.position.set(4, 3, 2);
+        scene.add(purpleNeon);
+
+        // 3D 씬 오브젝트들을 담을 환경 루트 그룹
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
+
+        // 인터랙션 대상 메쉬 그룹
+        const interactiveObjects = [];
+
+        // 드래그 카메라 컨트롤 시뮬레이션
+        let isDragging = false;
+        let prevMousePosition = { x: 0, y: 0 };
+        let cameraTargetAngle = 0;
+        let cameraTargetPitch = 5;
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            prevMousePosition = { x: e.offsetX, y: e.offsetY };
+            initAudio(); // 첫 마우스 상호작용 때 오디오 컨텍스트 기동
+        });
+        container.addEventListener('mouseup', () => isDragging = false);
+        container.addEventListener('mouseleave', () => isDragging = false);
+        container.addEventListener('mousemove', (e) => {
+            if(isDragging) {
+                const deltaX = e.offsetX - prevMousePosition.x;
+                const deltaY = e.offsetY - prevMousePosition.y;
+                cameraTargetAngle -= deltaX * 0.005;
+                cameraTargetPitch = Math.max(1, Math.min(12, cameraTargetPitch + deltaY * 0.05));
+            }
+            prevMousePosition = { x: e.offsetX, y: e.offsetY };
+        });
+
+        // ==========================================================================
+        // 절차적 3D 그래픽스 빌더 (주요 가상현실 3가지 도메인 환경 생성)
+        // ==========================================================================
+        function buildUrbanEnvironment() {
+            clearWorld();
+            
+            // 바닥 (아스팔트 도로망)
+            const groundGeo = new THREE.PlaneGeometry(30, 30);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.9 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            worldGroup.add(ground);
+
+            // 중앙 황색 실선 차선 추가
+            const roadLineGeo = new THREE.PlaneGeometry(0.2, 30);
+            const roadLineMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            const roadLine = new THREE.Mesh(roadLineGeo, roadLineMat);
+            roadLine.rotation.x = -Math.PI / 2;
+            roadLine.position.y = 0.01;
+            worldGroup.add(roadLine);
+
+            // 고밀도 상업용 빌딩가 (빌딩 4채 생성)
+            const heights = [8, 12, 6, 15];
+            const xPositions = [-6, -8, 7, 8];
+            const zPositions = [-4, 6, -5, 4];
+            
+            for(let i=0; i<4; i++) {
+                const bGeo = new THREE.BoxGeometry(3, heights[i], 3);
+                // 빌딩 반사율을 높여 도시 네온 라이트를 입힘
+                const bMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x1f1f2e, 
+                    roughness: 0.4, 
+                    metalness: 0.8 
+                });
+                const building = new THREE.Mesh(bGeo, bMat);
+                building.position.set(xPositions[i], heights[i]/2, zPositions[i]);
+                building.castShadow = true;
+                building.receiveShadow = true;
+                worldGroup.add(building);
+
+                // 빌딩 창문에 해당하는 격자 발광 메쉬 생성 (테셀레이션 느낌 부여)
+                const winGeo = new THREE.BoxGeometry(3.1, heights[i] - 1, 3.1);
+                const winMat = new THREE.MeshStandardMaterial({
+                    color: 0x0a0a0f,
+                    emissive: 0x00F0FF,
+                    emissiveIntensity: 0.35,
+                    wireframe: true
+                });
+                const windows = new THREE.Mesh(winGeo, winMat);
+                windows.position.copy(building.position);
+                worldGroup.add(windows);
+            }
+
+            // 가로등 (슬림 실린더 기둥 + 전구 기하)
+            const poleGeo = new THREE.CylinderGeometry(0.1, 0.15, 4, 8);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
+            const pole = new THREE.Mesh(poleGeo, poleMat);
+            pole.position.set(-2, 2, 2);
+            pole.castShadow = true;
+            worldGroup.add(pole);
+
+            const armGeo = new THREE.BoxGeometry(1.2, 0.1, 0.1);
+            const arm = new THREE.Mesh(armGeo, poleMat);
+            arm.position.set(-1.4, 4, 2);
+            worldGroup.add(arm);
+
+            const bulbGeo = new THREE.SphereGeometry(0.25, 16, 16);
+            const bulbMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xFFD700, emissiveIntensity: 1.5 });
+            const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+            bulb.position.set(-2, 4, 2);
+            bulb.name = "streetlight-bulb";
+            bulb.userData = { interactive: true, type: 'light', name: "가로등 광원", state: "켜짐" };
+            worldGroup.add(bulb);
+            interactiveObjects.push(bulb);
+
+            // 가로등 아래 벤치
+            const benchSupportGeo = new THREE.BoxGeometry(0.2, 0.6, 1.2);
+            const support1 = new THREE.Mesh(benchSupportGeo, poleMat);
+            support1.position.set(-2.4, 0.3, 3.5);
+            support1.castShadow = true;
+            worldGroup.add(support1);
+
+            const support2 = support1.clone();
+            support2.position.set(-1.6, 0.3, 3.5);
+            worldGroup.add(support2);
+
+            const seatGeo = new THREE.BoxGeometry(1.4, 0.1, 1);
+            const seatMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.7 });
+            const seat = new THREE.Mesh(seatGeo, seatMat);
+            seat.position.set(-2, 0.6, 3.5);
+            seat.castShadow = true;
+            seat.userData = { interactive: true, type: 'bench', name: "도시 벤치", state: "대기 상태" };
+            worldGroup.add(seat);
+            interactiveObjects.push(seat);
+        }
+
+        function buildIndoorEnvironment() {
+            clearWorld();
+
+            // 바닥 (인테리어 카펫)
+            const groundGeo = new THREE.PlaneGeometry(12, 12);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x2e1f2f, roughness: 0.9 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            worldGroup.add(ground);
+
+            // 내장 벽면틀 (Left, Back)
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x161622, roughness: 0.6 });
+            
+            const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), wallMat);
+            wallLeft.position.set(-6, 2.5, 0);
+            wallLeft.rotation.y = Math.PI / 2;
+            wallLeft.receiveShadow = true;
+            worldGroup.add(wallLeft);
+
+            const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), wallMat);
+            wallBack.position.set(0, 2.5, -6);
+            wallBack.receiveShadow = true;
+            worldGroup.add(wallBack);
+
+            // 가구: 책상 (Desk)
+            const tableTopGeo = new THREE.BoxGeometry(3, 0.1, 1.6);
+            const tableTopMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.5 });
+            const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
+            tableTop.position.set(0, 0.8, -4);
+            tableTop.castShadow = true;
+            tableTop.receiveShadow = true;
+            worldGroup.add(tableTop);
+
+            const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x111 });
+            const leg1 = new THREE.Mesh(legGeo, legMat);
+            leg1.position.set(-1.3, 0.4, -4.6);
+            leg1.castShadow = true;
+            worldGroup.add(leg1);
+
+            const leg2 = leg1.clone(); leg2.position.set(1.3, 0.4, -4.6); worldGroup.add(leg2);
+            const leg3 = leg1.clone(); leg3.position.set(-1.3, 0.4, -3.4); worldGroup.add(leg3);
+            const leg4 = leg1.clone(); leg4.position.set(1.3, 0.4, -3.4); worldGroup.add(leg4);
+
+            // 인터랙티브 오브젝트: 컴퓨터 본체 및 모니터
+            const monitorStandGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.4);
+            const monitorStand = new THREE.Mesh(monitorStandGeo, legMat);
+            monitorStand.position.set(0, 1.0, -4.4);
+            worldGroup.add(monitorStand);
+
+            const monitorScreenGeo = new THREE.BoxGeometry(1.2, 0.7, 0.08);
+            const monitorScreenMat = new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0.2 });
+            const monitorScreen = new THREE.Mesh(monitorScreenGeo, monitorScreenMat);
+            monitorScreen.position.set(0, 1.35, -4.4);
+            monitorScreen.castShadow = true;
+            worldGroup.add(monitorScreen);
+
+            // glowing screen face
+            const glowFaceGeo = new THREE.PlaneGeometry(1.15, 0.65);
+            const glowFaceMat = new THREE.MeshStandardMaterial({
+                color: 0x00F0FF,
+                emissive: 0x00F0FF,
+                emissiveIntensity: 0.8,
+                roughness: 0.1
+            });
+            const glowFace = new THREE.Mesh(glowFaceGeo, glowFaceMat);
+            glowFace.position.set(0, 1.35, -4.35);
+            glowFace.name = "screen";
+            monitorScreen.add(glowFace);
+
+            // 모니터 시스템 래핑 그룹
+            const pcGroup = new THREE.Group();
+            pcGroup.position.set(0, 0, 0);
+            pcGroup.name = "workstation";
+            pcGroup.userData = { interactive: true, type: 'computer', name: "워크스테이션 컴퓨터", state: "켜짐", isOn: true };
+            pcGroup.add(monitorStand);
+            pcGroup.add(monitorScreen);
+            worldGroup.add(pcGroup);
+            interactiveObjects.push(pcGroup);
+
+            // 인터랙티브 오브젝트: 가죽 컵 (마우스 클릭 시 공중 부양)
+            const cupGeo = new THREE.CylinderGeometry(0.12, 0.09, 0.35, 12);
+            const cupMat = new THREE.MeshStandardMaterial({ color: 0xff3366, roughness: 0.3 });
+            const cup = new THREE.Mesh(cupGeo, cupMat);
+            cup.position.set(0.8, 0.85, -4);
+            cup.castShadow = true;
+            cup.name = "ceramics-cup";
+            cup.userData = { interactive: true, type: 'cup', name: "반중력 세라믹 컵", state: "테이블에 놓임", isFloating: false };
+            worldGroup.add(cup);
+            interactiveObjects.push(cup);
+
+            // 구조: 벽면에 달린 회전식 미닫이 문
+            const doorFrameGeo = new THREE.BoxGeometry(1.8, 3.2, 0.15);
+            const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x333 });
+            const doorFrame = new THREE.Mesh(doorFrameGeo, doorFrameMat);
+            doorFrame.position.set(4, 1.6, -5.9);
+            worldGroup.add(doorFrame);
+
+            // 회전을 제어하기 위한 축(Hinged Door Group) 설정
+            const doorHingedGroup = new THREE.Group();
+            doorHingedGroup.position.set(3.1, 1.6, -5.9); // 회전 중심을 프레임 왼쪽 끝단으로 설정
+            worldGroup.add(doorHingedGroup);
+
+            const doorBodyGeo = new THREE.BoxGeometry(1.7, 3.1, 0.08);
+            const doorBodyMat = new THREE.MeshStandardMaterial({ color: 0x422f1d, roughness: 0.8 });
+            const doorBody = new THREE.Mesh(doorBodyGeo, doorBodyMat);
+            doorBody.position.set(0.85, 0, 0); // 회전 축을 피해 메쉬 치우쳐서 배치
+            doorBody.castShadow = true;
+            doorHingedGroup.add(doorBody);
+
+            // 문 손잡이 추가
+            const knobGeo = new THREE.SphereGeometry(0.08, 8, 8);
+            const knobMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, roughness: 0.1 });
+            const knob = new THREE.Mesh(knobGeo, knobMat);
+            knob.position.set(1.5, 0, 0.08);
+            doorBody.add(knob);
+
+            doorHingedGroup.name = "interactive-door";
+            doorHingedGroup.userData = { interactive: true, type: 'door', name: "위상 힌지 도어", state: "닫힘", isOpen: false };
+            interactiveObjects.push(doorHingedGroup);
+        }
+
+        function buildRuralEnvironment() {
+            clearWorld();
+
+            // 바닥 (완만한 지형의 들판)
+            const groundGeo = new THREE.PlaneGeometry(35, 35, 16, 16);
+            // 들판의 기복을 표현하기 위해 버텍스 변형 (NURBS 수치 근사 형태 구현)
+            const pos = groundGeo.attributes.position;
+            for(let i=0; i<pos.count; i++) {
+                const vx = pos.getX(i);
+                const vy = pos.getY(i);
+                // 사인파 노이즈로 울퉁불퉁한 구릉지 지형 시뮬레이션
+                const z = Math.sin(vx * 0.2) * Math.cos(vy * 0.2) * 0.6;
+                pos.setZ(i, z);
+            }
+            groundGeo.computeVertexNormals();
+
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x223a1a, roughness: 0.95 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            worldGroup.add(ground);
+
+            // 시골의 자연물: 작은 평화로운 호수
+            const lakeGeo = new THREE.CircleGeometry(4, 32);
+            const lakeMat = new THREE.MeshStandardMaterial({ color: 0x1a457a, roughness: 0.1, metalness: 0.8 });
+            const lake = new THREE.Mesh(lakeGeo, lakeMat);
+            lake.rotation.x = -Math.PI / 2;
+            lake.position.set(-6, 0.15, -4);
+            worldGroup.add(lake);
+
+            // 뒤에 펼쳐진 높은 산맥
+            const mountainGeo = new THREE.ConeGeometry(5, 7, 6);
+            const mountainMat = new THREE.MeshStandardMaterial({ color: 0x112b18, roughness: 0.9 });
+            const mountain1 = new THREE.Mesh(mountainGeo, mountainMat);
+            mountain1.position.set(-11, 3.5, -12);
+            worldGroup.add(mountain1);
+
+            const mountain2 = mountain1.clone();
+            mountain2.scale.set(1.4, 1.4, 1.4);
+            mountain2.position.set(10, 4.5, -14);
+            worldGroup.add(mountain2);
+
+            // 비닐하우스 (초록색 반투명 구조)
+            const greenhouseGroup = new THREE.Group();
+            greenhouseGroup.position.set(4, 0.5, 3);
+            greenhouseGroup.name = "greenhouse";
+            greenhouseGroup.userData = { interactive: true, type: 'greenhouse', name: "친환경 비닐하우스", state: "안전 가동 중" };
+
+            // 반원형 프레임 파이프들
+            for(let zOffset = -2; zOffset <= 2; zOffset += 1) {
+                const pipeGeo = new THREE.TorusGeometry(1, 0.05, 8, 24, Math.PI);
+                const pipeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+                pipe.position.set(0, 0, zOffset);
+                greenhouseGroup.add(pipe);
+            }
+
+            // 반투명 덮개
+            const skinGeo = new THREE.CylinderGeometry(1, 1, 4, 16, 1, true, 0, Math.PI);
+            const skinMat = new THREE.MeshStandardMaterial({ 
+                color: 0x00FF99, 
+                transparent: true, 
+                opacity: 0.4, 
+                side: THREE.DoubleSide 
+            });
+            const skin = new THREE.Mesh(skinGeo, skinMat);
+            skin.rotation.x = Math.PI / 2;
+            skin.position.set(0, 0, 0);
+            greenhouseGroup.add(skin);
+            
+            worldGroup.add(greenhouseGroup);
+            interactiveObjects.push(greenhouseGroup);
+
+            // 전통적인 시골 농촌의 정자 (Pavilion)
+            const pavGroup = new THREE.Group();
+            pavGroup.position.set(-4, 0.2, 5);
+
+            // 4개 지지 기둥
+            const pLegGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.5);
+            const pLegMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
+            
+            const px = [-0.8, 0.8, -0.8, 0.8];
+            const pz = [-0.8, -0.8, 0.8, 0.8];
+            for(let i=0; i<4; i++) {
+                const leg = new THREE.Mesh(pLegGeo, pLegMat);
+                leg.position.set(px[i], 0.75, pz[i]);
+                leg.castShadow = true;
+                pavGroup.add(leg);
+            }
+
+            // 고풍스러운 전통 정자 지붕 (Pyramid Cone)
+            const roofGeo = new THREE.ConeGeometry(1.4, 0.8, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x2e4033, roughness: 0.7 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.set(0, 1.9, 0);
+            roof.rotation.y = Math.PI / 4; // 대각선 구조
+            roof.name = "roof";
+            roof.castShadow = true;
+            pavGroup.add(roof);
+
+            pavGroup.name = "traditional-pavilion";
+            pavGroup.userData = { interactive: true, type: 'pavilion', name: "전통 대야 정자", state: "대기 상태" };
+            worldGroup.add(pavGroup);
+            interactiveObjects.push(pavGroup);
+        }
+
+        function clearWorld() {
+            // 기존 3D 오브젝트 제거
+            while(worldGroup.children.length > 0) {
+                worldGroup.remove(worldGroup.children[0]);
+            }
+            interactiveObjects.length = 0; // 인터랙션 어레이 리셋
+            selectedObject = null;
+            document.getElementById('inspect-name').innerText = "없음 (화면 내 사물 클릭)";
+            document.getElementById('inspect-state').innerText = "-";
+        }
+
+        // ==========================================================================
+        // 물리 상호작용 이벤트 리스너 (Raycasting)
+        // ==========================================================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        container.addEventListener('click', (e) => {
+            // 브라우저 마우스 좌표를 정규화된 디바이스 좌표(-1 to +1)로 변환
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            
+            // 인터랙티브 그룹 내 오브젝트 탐색
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                // 부모 그룹의 상호작용 속성을 찾아 위로 순회
+                let hitObj = intersects[0].object;
+                while (hitObj && !hitObj.userData.interactive) {
+                    hitObj = hitObj.parent;
+                }
+
+                if (hitObj) {
+                    selectedObject = hitObj;
+                    playSynthSound(587.33, 'triangle', 0.15); // 레 선율의 경쾌한 비프음
+                    
+                    // 인스펙터 UI 갱신
+                    document.getElementById('inspect-name').innerText = hitObj.userData.name;
+                    document.getElementById('inspect-state').innerText = hitObj.userData.state;
+                    
+                    // 특정 사물에 대한 즉각적 상호작용 피드백 애니메이션
+                    handleImmediateAction(hitObj);
+                }
+            }
+        });
+
+        // 오브젝트 유형별 트리거 동작 처리
+        function handleImmediateAction(obj) {
+            if (obj.userData.type === 'door') {
+                obj.userData.isOpen = !obj.userData.isOpen;
+                obj.userData.state = obj.userData.isOpen ? "완전 열림 (물리 각도: 90도)" : "닫힘";
+                logEvent('User', `'${obj.userData.name}'의 위상 기하 도어 상태를 토글했습니다.`);
+                playSynthSound(obj.userData.isOpen ? 440 : 220, 'sine', 0.3);
+            } 
+            else if (obj.userData.type === 'computer') {
+                obj.userData.isOn = !obj.userData.isOn;
+                obj.userData.state = obj.userData.isOn ? "작동 중 (전력 가속)" : "절전 대기";
+                logEvent('User', `'${obj.userData.name}'의 전원을 제어했습니다.`);
+                playSynthSound(obj.userData.isOn ? 880 : 110, 'sawtooth', 0.2);
+            } 
+            else if (obj.userData.type === 'cup') {
+                obj.userData.isFloating = !obj.userData.isFloating;
+                obj.userData.state = obj.userData.isFloating ? "부유 모드 작동 (반중력)" : "테이블 안착";
+                logEvent('User', `'${obj.userData.name}'에 반중력 충격을 가했습니다.`);
+                playSynthSound(obj.userData.isFloating ? 659.25 : 329.63, 'square', 0.25);
+            }
+            else if (obj.userData.type === 'light') {
+                const bulb = worldGroup.getObjectByName("streetlight-bulb");
+                if(bulb) {
+                    const isLit = bulb.userData.state === "켜짐";
+                    bulb.userData.state = isLit ? "소등" : "켜짐";
+                    bulb.material.emissiveIntensity = isLit ? 0.05 : 1.5;
+                    logEvent('User', `'${obj.userData.name}' 가로등의 조명을 전환했습니다.`);
+                    playSynthSound(isLit ? 150 : 600, 'sine', 0.1);
+                }
+            }
+            else {
+                // 일반 개체 클릭 피드백
+                obj.userData.state = "물리 충돌 체크 통과";
+            }
+            
+            document.getElementById('inspect-state').innerText = obj.userData.state;
+        }
+
+        // 인스펙터 원격 조종 패널 클릭 시 작동
+        function triggerSelectedObjectAction() {
+            if (selectedObject) {
+                handleImmediateAction(selectedObject);
+            } else {
+                showNotification("화면 상에서 먼저 상호작용할 사물을 탭해주세요!");
+            }
+        }
+
+        // 환경 전환 트리거
+        function switchEnvironment(env) {
+            currentEnvironment = env;
+            
+            // 버튼 상태 토글
+            document.querySelectorAll('.btn-env').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            playSynthSound(349.23, 'sine', 0.2); // 전환 효과음
+
+            if (env === 'urban') {
+                buildUrbanEnvironment();
+                document.getElementById('active-asset-title').innerText = "Active Environment: Urban Metropolis";
+                logEvent('System', '도심 환경 리빌딩 및 가로등 수치 기하 구조 활성화.');
+            } else if (env === 'indoor') {
+                buildIndoorEnvironment();
+                document.getElementById('active-asset-title').innerText = "Active Environment: Cozy Room Layout";
+                logEvent('System', '실내 환경 인테리어 가구 배치 및 가속 컴퓨트 실행.');
+            } else if (env === 'rural') {
+                buildRuralEnvironment();
+                document.getElementById('active-asset-title').innerText = "Active Environment: Quiet Countryside";
+                logEvent('System', '시골 지형 생성 및 비닐하우스/정자 지오메트리 패싱 완료.');
+            }
+        }
+
+        // ==========================================================================
+        // AI 저작권 시뮬레이터 (AI Build) - 실제 3D 형상화 기하 가속 구현
+        // ==========================================================================
+        function generateProceduralAsset() {
+            const promptInput = document.getElementById('ai-prompt');
+            const prompt = promptInput.value.trim();
+            if (!prompt) return;
+
+            logEvent('User', `AI 에이전트에게 가상 형상 저작 의뢰: "${prompt}"`);
+            playSynthSound(523.25, 'sine', 0.1);
+            
+            setTimeout(() => {
+                logEvent('Agent', `프롬프트 구문 분석... 지오메트릭 커널을 통해 메쉬 테셀레이션 파싱 개시.`);
+                
+                setTimeout(() => {
+                    const id = 'custom-' + Date.now().toString().substring(8);
+                    const title = prompt.length > 20 ? prompt.substring(0, 18) + '...' : prompt;
+                    
+                    // 프롬프트 성격 분석하여 적절한 절차적 기하 뼈대 추가 구현
+                    const isRural = prompt.includes('시골') || prompt.includes('하우스') || prompt.includes('울타리') || prompt.includes('밭');
+                    const isLight = prompt.includes('가로등') || prompt.includes('조명') || prompt.includes('신호등');
+                    
+                    let createdMesh;
+                    let assetType = 'custom';
+
+                    if (isLight) {
+                        // 가로등 생성
+                        const poleGeo = new THREE.CylinderGeometry(0.08, 0.12, 3, 8);
+                        const poleMat = new THREE.MeshStandardMaterial({ color: 0x555577 });
+                        const pole = new THREE.Mesh(poleGeo, poleMat);
+                        pole.position.set(0, 1.5, 0);
+                        
+                        const capGeo = new THREE.SphereGeometry(0.3, 16, 16);
+                        const capMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00F0FF, emissiveIntensity: 1.2 });
+                        const cap = new THREE.Mesh(capGeo, capMat);
+                        cap.position.set(0, 3, 0);
+                        cap.name = "glowing-cap";
+                        pole.add(cap);
+
+                        pole.userData = { interactive: true, type: 'light', name: title, state: "작동 상태" };
+                        worldGroup.add(pole);
+                        interactiveObjects.push(pole);
+                        createdMesh = pole;
+                        assetType = 'light';
+                    } 
+                    else if (isRural) {
+                        // 비닐하우스 형태의 프레임 생성
+                        const frameGeo = new THREE.TorusGeometry(1, 0.08, 8, 24, Math.PI);
+                        const frameMat = new THREE.MeshStandardMaterial({ color: 0x22c55e });
+                        const frame = new THREE.Mesh(frameGeo, frameMat);
+                        frame.position.set(0, 0, 0);
+
+                        frame.userData = { interactive: true, type: 'greenhouse', name: title, state: "자연풍 동화" };
+                        worldGroup.add(frame);
+                        interactiveObjects.push(frame);
+                        createdMesh = frame;
+                        assetType = 'greenhouse';
+                    } 
+                    else {
+                        // 기본 공용 인터랙티브 큐브 가구 생성
+                        const boxGeo = new THREE.BoxGeometry(1.2, 0.8, 1.2);
+                        const boxMat = new THREE.MeshStandardMaterial({ color: 0xB57EDC, roughness: 0.3, metalness: 0.6 });
+                        const box = new THREE.Mesh(boxGeo, boxMat);
+                        box.position.set(0, 0.4, 0);
+                        box.castShadow = true;
+
+                        box.userData = { interactive: true, type: 'furniture', name: title, state: "배치 대기" };
+                        worldGroup.add(box);
+                        interactiveObjects.push(box);
+                        createdMesh = box;
+                        assetType = 'furniture';
+                    }
+
+                    // 구동 프로그램 코드 연결
+                    const newAsset = {
+                        id: id,
+                        title: title,
+                        creator: "User",
+                        price: (1.20 + Math.random() * 2).toFixed(2),
+                        type: assetType,
+                        description: `[AI 자율 저작] "${prompt}" 구상을 절차적 3D 지오메트리와 물리 코드로 구성 완료.`,
+                        code: `// Custom Interactive Program for ${title}
+function animate(mesh, time) {
+    mesh.rotation.y = time * 0.0015;
+    const s = 1 + Math.sin(time * 0.003) * 0.1;
+    mesh.scale.set(s, s, s);
+}`
+                    };
+
+                    assetsMarket.push(newAsset);
+                    renderMarketplace();
+                    loadAssetToEngine(newAsset);
+                    
+                    logEvent('System', `새로운 VR 사물 및 제어 프로그램 [${title}]이 정상적으로 컴파일 및 필드 배포되었습니다.`);
+                    showNotification(`신규 에셋 저작 성공! 화면 중심부에 즉시 렌더링됩니다.`);
+                    playSynthSound(880, 'sine', 0.4); // 성공 음향 효과
+                }, 1000);
+            }, 800);
+        }
+
+        // ==========================================================================
+        // P2P 거래 및 분산 에이전트 마켓플레이스 로직
+        // ==========================================================================
+        function renderMarketplace() {
+            const container = document.getElementById('marketplace-assets');
+            container.innerHTML = '';
+
+            assetsMarket.forEach(asset => {
+                const card = document.createElement('div');
+                card.className = 'asset-card';
+                
+                const isUserOwner = asset.creator === "User";
+                const actionButtonText = isUserOwner ? "My Asset (Load)" : "Acquire License";
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="asset-meta">
+                            <span>ID: ${asset.id.substring(0,10)}</span>
+                            <span class="asset-creator">Creator: ${asset.creator}</span>
+                        </div>
+                        <div class="asset-title">${asset.title}</div>
+                        <div class="asset-program-desc">${asset.description}</div>
+                    </div>
+                    <div class="asset-footer">
+                        <span class="asset-price">♦ ${asset.price} CHKN</span>
+                        <button class="btn-buy" onclick="handleAssetAction('${asset.id}')">${actionButtonText}</button>
+                    </div>
+                `;
+                
+                // 카드 바디 클릭 시 상세 시뮬레이팅 전재
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        loadAssetToEngine(asset);
+                    }
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function loadAssetToEngine(asset) {
+            document.getElementById('program-code-view').innerText = asset.code;
+            showNotification(`가속 인터랙션 프로그램 스크립트 전환됨.`);
+            playSynthSound(440, 'triangle', 0.1);
+        }
+
+        function handleAssetAction(id) {
+            const asset = assetsMarket.find(a => a.id === id);
+            if (!asset) return;
+
+            if (asset.creator === "User") {
+                loadAssetToEngine(asset);
+                showNotification(`사용자 콘텐츠 및 인터랙션 코드 준비됨.`);
+            } else {
+                const price = parseFloat(asset.price);
+                if (userBalance < price) {
+                    showNotification("가상화폐(CHKN) 잔고가 유효하지 않습니다.");
+                    logEvent('System', "잔고 결핍으로 계약 체결 무산.");
+                    playSynthSound(100, 'sawtooth', 0.5);
+                    return;
+                }
+
+                userBalance -= price;
+                agentBalance += price;
+                asset.creator = "User"; // 소유권 변경
+                
+                updateBalances();
+                renderMarketplace();
+                loadAssetToEngine(asset);
+                
+                logEvent('System', `P2P 블록체인 계약 완결: ${asset.title} 소유권이 사용자 지갑으로 전이되었습니다.`);
+                showNotification(`라이센스 양도 완료! 지갑 거래 기록 갱신.`);
+                playSynthSound(987.77, 'sine', 0.35); // 맑은 화폐 획득 사운드
+            }
+        }
+
+        // ==========================================================================
+        // 백그라운드 AI 에이전트 자율 행동 (15초 주기 작동)
+        // ==========================================================================
+        setInterval(() => {
+            if (Math.random() < 0.25) {
+                const names = ["Steel Trash Bin", "Smart Transit Stop", "Wooden Fence Matrix", "Paddy Irrigation valve"];
+                const types = ["furniture", "light", "greenhouse"];
+                const randName = names[Math.floor(Math.random() * names.length)];
+                const randType = types[Math.floor(Math.random() * types.length)];
+                const id = 'agent-' + Date.now().toString().substring(8);
+                
+                const newAgentAsset = {
+                    id: id,
+                    title: randName,
+                    creator: "Agent",
+                    price: (1.10 + Math.random() * 2).toFixed(2),
+                    type: randType,
+                    description: `AI 에이전트가 독자적으로 가상현실에 정위한 환경 보조 사물 라이센스 패키지.`,
+                    code: `// Autonomous Agent code
+function animate(mesh, time) {
+    mesh.position.y = Math.sin(time * 0.002) * 0.1;
+}`
+                };
+
+                assetsMarket.push(newAgentAsset);
+                renderMarketplace();
+                logEvent('Agent', `자율 창작 사이클: 신형 하드웨어 [${randName}] 빌딩 및 마켓플레이스 등록.`);
+            }
+        }, 15000);
+
+        // ==========================================================================
+        // 렌더링 프레임 업데이트 루프 (물리 엔진 틱 가동)
+        // ==========================================================================
+        let startTime = Date.now();
+        let cameraAngle = 0;
+
+        function mainLoop() {
+            requestAnimationFrame(mainLoop);
+            
+            const elapsed = Date.now() - startTime;
+            
+            // 카메라 스무스 궤도 회전 제어
+            cameraAngle = THREE.MathUtils.lerp(cameraAngle, cameraTargetAngle, 0.05);
+            const r = 10;
+            camera.position.x = Math.sin(cameraAngle) * r;
+            camera.position.z = Math.cos(cameraAngle) * r;
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, cameraTargetPitch, 0.05);
+            camera.lookAt(0, 1.5, 0);
+
+            // 인터랙티브 오브젝트들의 동적 스크립트 실행 (도어, 컵, 컴퓨터 등의 특화된 스크립트 실행)
+            interactiveObjects.forEach(obj => {
+                if (obj.userData.type === 'door') {
+                    if (obj.userData.isOpen) {
+                        obj.rotation.y = THREE.MathUtils.lerp(obj.rotation.y, Math.PI / 1.8, 0.08);
+                    } else {
+                        obj.rotation.y = THREE.MathUtils.lerp(obj.rotation.y, 0, 0.08);
+                    }
+                } 
+                else if (obj.userData.type === 'computer') {
+                    const screen = obj.getObjectByName('screen');
+                    if (screen) {
+                        if (obj.userData.isOn) {
+                            screen.material.emissiveIntensity = 1.0 + Math.sin(elapsed * 0.005) * 0.3;
+                        } else {
+                            screen.material.emissiveIntensity = 0.0;
+                        }
+                    }
+                } 
+                else if (obj.userData.type === 'cup') {
+                    if (obj.userData.isFloating) {
+                        obj.position.y = THREE.MathUtils.lerp(obj.position.y, 1.4 + Math.sin(elapsed * 0.004) * 0.15, 0.1);
+                        obj.rotation.y += 0.02;
+                    } else {
+                        obj.position.y = THREE.MathUtils.lerp(obj.position.y, 0.85, 0.1);
+                        obj.rotation.y = THREE.MathUtils.lerp(obj.rotation.y, 0, 0.1);
+                    }
+                }
+                else if (obj.userData.type === 'greenhouse') {
+                    // 비닐하우스 미세 기압 팽창 효과 시뮬레이션
+                    const scale = 1.0 + Math.sin(elapsed * 0.001) * 0.01;
+                    obj.scale.set(scale, scale, scale);
+                }
+                else if (obj.userData.type === 'pavilion') {
+                    // 정자 지붕 바람 숨결 효과
+                    const roof = obj.getObjectByName('roof');
+                    if (roof) {
+                        roof.position.y = 1.9 + Math.sin(elapsed * 0.0015) * 0.03;
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // 반응형 리사이즈
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // 웹 기동 초기 연동 시퀀스
+        window.onload = function() {
+            updateBalances();
+            renderMarketplace();
+            buildUrbanEnvironment(); // 디폴트 도시 환경 기동
+            mainLoop();
+        }
+    </script>
+</body>
+</html>
