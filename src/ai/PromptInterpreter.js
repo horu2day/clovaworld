@@ -363,6 +363,28 @@ JSON 출력 스키마 명세:
         }`
       };
     }
+    // D-0. 방/공간 키워드 (IfcSpace)
+    else if (normalized.includes('방') || normalized.includes('room') || normalized.includes('벽') || normalized.includes('wall') || normalized.includes('공간') || normalized.includes('space') || normalized.includes('문')) {
+      return {
+        geometryType: 'IfcSpace',
+        predefinedType: 'ROOM',
+        title: '네온 룸',
+        dimensions: { width: 6, depth: 6, wallHeight: 3, wallThickness: 0.2, doorWidth: 1.0, doorHeight: 2.1 },
+        neonStyle: 'pulse',
+        customColor: '#2a2a35',
+        emissiveColor: '#00F0FF',
+        physicsScript: `function animate(mesh, time) {
+          mesh.traverse(c => {
+            if (c.name && c.name.startsWith('neon-')) {
+              c.material.emissiveIntensity = 1.2 + Math.sin(time * 0.003 + c.name.charCodeAt(5) * 0.5) * 0.5;
+            }
+            if (c.name === 'door-panel') {
+              c.material.emissiveIntensity = 0.3 + Math.abs(Math.sin(time * 0.002)) * 0.4;
+            }
+          });
+        }`
+      };
+    }
     // D. 미래 에너지/우주 설비 및 Fallback
     else {
       let facilityType = 'POWER_STATION';

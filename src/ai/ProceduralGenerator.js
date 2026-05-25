@@ -124,6 +124,16 @@ export class ProceduralGenerator {
       );
       createdMesh.name = `equipment-${Date.now().toString().substring(8)}`;
     }
+    else if (type === 'IfcSpace') {
+      createdMesh = this.createParametricRoom(
+        schema.predefinedType || 'ROOM',
+        schema.dimensions || {},
+        schema.customColor || '#2a2a35',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00F0FF'
+      );
+      createdMesh.name = `room-${Date.now().toString().substring(8)}`;
+    }
 
     else if (type === 'modular-assembly' || schema.assembly) {
       const assemblyGroup = new THREE.Group();
@@ -2291,6 +2301,92 @@ export class ProceduralGenerator {
     this.renderer.worldGroup.add(equipGroup);
     this.renderer.interactiveObjects.push(equipGroup);
     return equipGroup;
+  }
+
+  // 12. [IfcSpace] 파라메트릭 방 — 벽 4개 + 문 1개
+  createParametricRoom(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const roomGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const w  = dims.width         || 6;
+    const d  = dims.depth         || 6;
+    const h  = dims.wallHeight    || 3;
+    const t  = dims.wallThickness || 0.2;
+    const dW = dims.doorWidth     || 1.0;
+    const dH = dims.doorHeight    || 2.1;
+
+    const wallMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide });
+    const floorMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.6), roughness: 0.9, metalness: 0.0 });
+    const doorMat = new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.7 });
+    const neonMat = new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 1.6, transparent: true, opacity: 0.9 });
+
+    const addWall = (sx, sy, sz, px, py, pz) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), wallMat);
+      m.position.set(px, py, pz);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      roomGroup.add(m);
+    };
+
+    // 바닥
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), floorMat);
+    floor.position.set(0, 0, 0);
+    floor.receiveShadow = true;
+    roomGroup.add(floor);
+
+    // 북쪽 벽 (z = -d/2) — 통벽
+    addWall(w, h, t, 0, h / 2, -d / 2);
+    // 동쪽 벽 (x = +w/2) — 통벽
+    addWall(t, h, d, w / 2, h / 2, 0);
+    // 서쪽 벽 (x = -w/2) — 통벽
+    addWall(t, h, d, -w / 2, h / 2, 0);
+
+    // 남쪽 벽 (z = +d/2) — 문 개구부
+    const sideW = (w - dW) / 2;
+    if (sideW > 0.01) {
+      addWall(sideW, h, t, -(dW / 2 + sideW / 2), h / 2, d / 2);  // 왼쪽
+      addWall(sideW, h, t,  (dW / 2 + sideW / 2), h / 2, d / 2);  // 오른쪽
+    }
+    const headerH = h - dH;
+    if (headerH > 0.01) {
+      addWall(dW, headerH, t, 0, dH + headerH / 2, d / 2);          // 인방
+    }
+
+    // 문짝
+    const door = new THREE.Mesh(new THREE.BoxGeometry(dW - 0.06, dH - 0.04, t * 0.35), doorMat);
+    door.position.set(0, dH / 2, d / 2);
+    door.name = 'door-panel';
+    roomGroup.add(door);
+
+    // 네온 상단 엣지 (4방향)
+    const nr = 0.04;
+    const edges = [
+      { len: w, rot: [0, 0, Math.PI / 2], pos: [0, h, -d / 2], name: 'neon-n' },
+      { len: w, rot: [0, 0, Math.PI / 2], pos: [0, h,  d / 2], name: 'neon-s' },
+      { len: d, rot: [Math.PI / 2, 0, 0], pos: [ w / 2, h, 0], name: 'neon-e' },
+      { len: d, rot: [Math.PI / 2, 0, 0], pos: [-w / 2, h, 0], name: 'neon-w' },
+    ];
+    edges.forEach(({ len, rot, pos, name }) => {
+      const geo = new THREE.CylinderGeometry(nr, nr, len, 6);
+      geo.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(...rot)));
+      const m = new THREE.Mesh(geo, neonMat);
+      m.position.set(...pos);
+      m.name = name;
+      roomGroup.add(m);
+    });
+
+    roomGroup.userData = {
+      interactive: true,
+      type: 'IfcSpace',
+      ifcType: 'IfcSpace',
+      predefinedType,
+      state: '공간 활성화',
+    };
+
+    this.renderer.worldGroup.add(roomGroup);
+    this.renderer.interactiveObjects.push(roomGroup);
+    return roomGroup;
   }
 }
 

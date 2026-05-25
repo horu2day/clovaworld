@@ -35,7 +35,8 @@ export class AgentSimulator {
       { module: 'Civil', type: 'IfcRoadPart', prompt: "Holographic sky-highway automated toll gate checking balance signatures", goal: "Construct anti-gravity elevated road networks" },
       { module: 'Plant', type: 'IfcDistributionElement', prompt: "Superluminal grid energy mast with corona discharge ring", goal: "Plan carbon-neutral power grid infrastructure" },
       { module: 'Civil', type: 'IfcSignal', prompt: "Automated quantum rail signaling mast with tri-color holographic beacon", goal: "Install secure scanning signal mast checkpoints" },
-      { module: 'Civil', type: 'IfcConstructionEquipment', prompt: "Solar-powered heavy hydraulic crawler crane crawler assembly", goal: "Deploy solar luffing heavy crane assembly" }
+      { module: 'Civil', type: 'IfcConstructionEquipment', prompt: "Solar-powered heavy hydraulic crawler crane crawler assembly", goal: "Deploy solar luffing heavy crane assembly" },
+      { module: 'Structural', type: 'IfcSpace', prompt: "Neon-lit room with 4 walls and a glowing door", goal: "Construct habitable space modules" }
     ];
     this.learnedPrompts = [];
   }
