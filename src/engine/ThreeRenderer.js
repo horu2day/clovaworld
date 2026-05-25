@@ -71,6 +71,13 @@ export class ThreeRenderer {
     this.initLights();
     this.initSkyDome();
     this.bindEvents();
+    
+    // x,z 지면 평면에 아름다운 사이버 네온 그리드 헬퍼 추가 (지글거림 방지를 위해 0.02m 살짝 띄움)
+    const gridHelper = new THREE.GridHelper(300, 150, 0x00FF99, 0x223344);
+    gridHelper.position.y = 0.02;
+    gridHelper.name = 'skydome'; // zoomFit 계산에서 제외되도록 명명
+    this.scene.add(gridHelper);
+
     this.setCinematicMode(false); // 디폴트 RTS 모드 및 OFF 뱃지 동기화
   }
 
@@ -307,22 +314,12 @@ export class ThreeRenderer {
     let hasContent = false;
 
     this.worldGroup.traverse((obj) => {
-      if (obj.isMesh && obj.name !== 'ground-plane') {
+      if (obj.isMesh && obj.name !== 'ground-plane' && obj.name !== 'skydome') {
         const meshBox = new THREE.Box3().setFromObject(obj);
         box.union(meshBox);
         hasContent = true;
       }
     });
-
-    // 콘텐츠가 없으면 ground-plane 포함
-    if (!hasContent) {
-      this.worldGroup.traverse((obj) => {
-        if (obj.isMesh) {
-          box.union(new THREE.Box3().setFromObject(obj));
-          hasContent = true;
-        }
-      });
-    }
 
     if (!hasContent) {
       // 아무것도 없으면 기본값으로
@@ -346,7 +343,6 @@ export class ThreeRenderer {
 
     this.cameraTargetRadius = Math.max(30, Math.min(1200, fitRadius));
     this.cameraTargetPitch = 42;
-    // 현재 각도 유지 (회전은 건드리지 않음)
   }
 
   // 메인 렌더 업데이트 틱
@@ -514,6 +510,45 @@ export class ThreeRenderer {
 
       this.skyDomeDay.rotation.y = elapsed * 0.000004;
       this.skyDomeNight.rotation.y = elapsed * 0.000004;
+    }
+
+    // ─── [고도화] 아파트 도면 모드 감지 및 스튜디오 중립 조명 최적화 ───
+    let hasFloorPlan = false;
+    this.worldGroup.traverse((child) => {
+      if (child.userData && (child.userData.type === 'IfcWall' || child.userData.type === 'IfcCovering')) {
+        hasFloorPlan = true;
+      }
+    });
+
+    if (hasFloorPlan) {
+      // 아파트 도면 로드 시: 네온 조명 소등 및 화이트 중립 라이팅 설정 (바닥 고유 색상 완벽 보존)
+      if (this.cyanNeon) this.cyanNeon.intensity = 0.0;
+      if (this.purpleNeon) this.purpleNeon.intensity = 0.0;
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0xffffff);
+        this.hemiLight.groundColor.setHex(0xaaaaaa);
+        this.hemiLight.intensity = 0.6;
+      }
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(0xffffff);
+        this.ambientLight.intensity = 1.0; // 화사하고 밝은 백색광
+      }
+      if (this.sunLight) {
+        this.sunLight.intensity = 1.8;
+        this.sunLight.color.setHex(0xffffff);
+      }
+    } else {
+      // 일반 사이버네틱 네온 도시 모드: 기존 조명 값 및 색상 복원
+      if (this.cyanNeon) this.cyanNeon.intensity = 4.0;
+      if (this.purpleNeon) this.purpleNeon.intensity = 4.0;
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0x4a62d6);
+        this.hemiLight.groundColor.setHex(0x1f3030);
+        this.hemiLight.intensity = this.isNight ? 0.15 : 1.2;
+      }
+      if (this.ambientLight) {
+        this.ambientLight.intensity = 0.85;
+      }
     }
 
     this.renderer.render(this.scene, this.camera);

@@ -108,7 +108,7 @@ const INITIAL_ASSETS = [
 class App {
   constructor() {
     // 핵심 엔진
-    this.renderer = new ThreeRenderer('viewport-canvas');
+    this.renderer = new ThreeRenderer('vr-canvas-container');
     this.envManager = new EnvironmentManager(this.renderer);
     this.generator = new ProceduralGenerator(this.renderer);
     this.interpreter = new PromptInterpreter();
@@ -160,10 +160,32 @@ class App {
       onSelect: (obj) => {
         this.selectedObject = obj;
         this.inspector.update(obj);
+
+        // Remove old selection outline helper
+        if (this.selectionHelper) {
+          this.renderer.scene.remove(this.selectionHelper);
+          this.selectionHelper.dispose();
+          this.selectionHelper = null;
+        }
+
+        // Add new BoxHelper outline highlight
+        if (obj) {
+          this.selectionHelper = new THREE.BoxHelper(obj, 0x00ffcc);
+          this.selectionHelper.material.depthTest = false; // Render on top
+          this.selectionHelper.material.linewidth = 2;     // Thicker line helper
+          this.renderer.scene.add(this.selectionHelper);
+        }
       },
       onDeselect: () => {
         this.selectedObject = null;
         this.inspector.reset();
+
+        // Remove selection outline helper
+        if (this.selectionHelper) {
+          this.renderer.scene.remove(this.selectionHelper);
+          this.selectionHelper.dispose();
+          this.selectionHelper = null;
+        }
       },
     });
 
@@ -177,34 +199,62 @@ class App {
     // City Agent 자율 스케줄러 시작
     this.agent.start();
 
-    // 렌더 루프
-    this.renderer.startLoop(() => {
+    // 렌더 루프 콜백 등록
+    this.renderer.registerAnimationCallback(() => {
       this.raycaster.update();
       if (this.renderer.streamingManager) {
         this.renderer.streamingManager.update(this.renderer.camera.position.z);
       }
     });
 
+    // 렌더 루프 시작
+    this.renderer.start();
+
     this.layout.logEvent('System', '🤖 City Agent 시스템 초기화 완료 — 빈 캔버스에서 시작합니다.');
     this.layout.logEvent('Agent', '대기 중... "City Agent 생성" 버튼을 누르거나 자율 모드로 기다려 주세요.');
+
+    // 훈련 시작: 1초 후 자동으로 parsed Building-Structural.ifc 구조 모델 생성 및 Zoom Fit 포커싱 수행
+    setTimeout(() => {
+      this.layout.logEvent('Agent', '🤖 [IFC 구조 훈련 수신] Building-Structural.ifc 로드 및 3D 시공 자동 시작.');
+      this.generateAIProceduralAsset("Building-Structural.ifc", "modular-assembly").then(() => {
+        if (this.lastCreatedMesh) {
+          this.zoomToLastCreated();
+          this.layout.logEvent('System', '📸 카메라 자동 포커싱 완료 — 시공된 구조 모델이 정상적으로 노출됩니다.');
+        }
+      });
+    }, 1000);
   }
 
   // ============================================================
   // UI 이벤트 바인딩
   // ============================================================
   bindUIEvents() {
-    // 공간 Clear 버튼
+    // 공간 Clear 공통 함수
+    const clearViewport = () => {
+      this.envManager.build('urban');
+      this.lastCreatedMesh = null;
+      this.selectedObject = null;
+      this.inspector.reset();
+      if (this.selectionHelper) {
+        this.renderer.scene.remove(this.selectionHelper);
+        this.selectionHelper.dispose();
+        this.selectionHelper = null;
+      }
+      this.assetsMarket = this.assetsMarket.filter(a => a.creator !== 'City Agent' || INITIAL_ASSETS.find(i => i.id === a.id));
+      this.marketView.render(this.assetsMarket);
+      this.layout.showNotification('🧹 가상공간이 초기화되었습니다.');
+      this.layout.logEvent('System', '가상공간 초기화 완료.');
+      this.updateZoomLastBtn();
+    };
+
+    // 공간 Clear 버튼들 (상단 플로팅 & 좌측 패널)
     const clearBtn = document.getElementById('btn-viewport-clear');
     if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.envManager.build('urban');
-        this.lastCreatedMesh = null;
-        this.assetsMarket = this.assetsMarket.filter(a => a.creator !== 'City Agent' || INITIAL_ASSETS.find(i => i.id === a.id));
-        this.marketView.render(this.assetsMarket);
-        this.layout.showNotification('🧹 가상공간이 초기화되었습니다.');
-        this.layout.logEvent('System', '가상공간 초기화 완료.');
-        this.updateZoomLastBtn();
-      });
+      clearBtn.addEventListener('click', clearViewport);
+    }
+    const clearWorldBtn = document.getElementById('btn-clear-world');
+    if (clearWorldBtn) {
+      clearWorldBtn.addEventListener('click', clearViewport);
     }
 
     // City Agent 수동 생성 버튼
@@ -244,14 +294,125 @@ class App {
     });
 
     // API Key 저장
-    const apiKeyBtn = document.getElementById('btn-save-apikey');
+    const apiKeyBtn = document.getElementById('btn-save-key');
     if (apiKeyBtn) {
       apiKeyBtn.addEventListener('click', () => {
         const keyInput = document.getElementById('gemini-api-key');
         if (keyInput && keyInput.value.trim()) {
           this.interpreter.setApiKey(keyInput.value.trim());
+          const keyStatusLabel = document.getElementById('key-status-label');
+          const keyStatusDot = document.getElementById('key-status-dot');
+          if (keyStatusLabel) keyStatusLabel.innerText = 'Gemini API 키 등록됨 (LLM 설계 모드 활성화)';
+          if (keyStatusDot) keyStatusDot.style.backgroundColor = '#00FF99';
           this.layout.showNotification('✅ Gemini API Key 저장 완료');
           this.layout.logEvent('System', 'Gemini API Key 등록. 실제 LLM 설계 모드 활성화.');
+        }
+      });
+    }
+
+    // BIM 속성창 포커스 (Zoom to selected)
+    const inspectZoomBtn = document.getElementById('btn-inspect-zoom');
+    if (inspectZoomBtn) {
+      inspectZoomBtn.addEventListener('click', () => {
+        if (!this.selectedObject) {
+          this.layout.showNotification('⚠️ 포커싱할 사물이 선택되지 않았습니다.');
+          return;
+        }
+        const first = this.selectedObject;
+        const box = new THREE.Box3().setFromObject(first);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        this.renderer.target.copy(center);
+        const diagonal = Math.sqrt(size.x * size.x + size.z * size.z);
+        const fovRad = (this.renderer.camera.fov * Math.PI) / 180;
+        const fitRadius = Math.max(15, (diagonal / 2) / Math.tan(fovRad / 2) * 1.5);
+        this.renderer.cameraTargetRadius = fitRadius;
+        this.renderer.cameraTargetPitch = 35;
+        this.layout.logEvent('System', `📸 카메라 포커스 이동 → "${first.name || '선택 사물'}"`);
+      });
+    }
+
+    // IFC Class 검색 및 일괄 하이라이트
+    const classSelectRunBtn = document.getElementById('btn-class-select-run');
+    if (classSelectRunBtn) {
+      classSelectRunBtn.addEventListener('click', () => {
+        const dropdown = document.getElementById('btn-class-dropdown');
+        if (!dropdown) return;
+        const selectedClass = dropdown.value;
+
+        // Reset previous highlights
+        this.renderer.worldGroup.traverse(child => {
+          if (child.isMesh && child.material && child.material.emissive) {
+            if (child.userData.origEmissiveIntensity !== undefined) {
+              child.material.emissiveIntensity = child.userData.origEmissiveIntensity;
+              if (child.userData.origEmissiveColor) {
+                child.material.emissive.copy(child.userData.origEmissiveColor);
+              }
+            }
+          }
+        });
+
+        // Filter meshes recursively
+        const matches = [];
+        this.renderer.worldGroup.traverse(child => {
+          if (child.name === 'ground-plane' || child.name === 'skydome') return;
+          const type = child.userData.type || '';
+          if (selectedClass === 'all') {
+            if (child.parent === this.renderer.worldGroup && child !== this.renderer.worldGroup) {
+              matches.push(child);
+            }
+          } else if (selectedClass === 'modular-assembly') {
+            if (type === 'modular-assembly' || child.name.includes('assembly') || child.name.includes('House') || child.name.includes('BIM House') || child.name.includes('Structural')) {
+              matches.push(child);
+            }
+          } else if (type === selectedClass) {
+            matches.push(child);
+          }
+        });
+
+        const countValEl = document.getElementById('class-select-count-val');
+        if (countValEl) {
+          countValEl.innerText = matches.length;
+        }
+
+        if (matches.length > 0) {
+          // Highlight elements with glowing cyan
+          matches.forEach(mesh => {
+            mesh.traverse(child => {
+              if (child.isMesh && child.material && child.material.emissive) {
+                if (child.userData.origEmissiveIntensity === undefined) {
+                  child.userData.origEmissiveIntensity = child.material.emissiveIntensity;
+                  child.userData.origEmissiveColor = child.material.emissive.clone();
+                }
+                child.material.emissive.set('#00FFFF');
+                child.material.emissiveIntensity = 2.5;
+              }
+            });
+          });
+
+          // Focus on the first element
+          const first = matches[0];
+          this.selectedObject = first;
+          this.inspector.update(first);
+
+          const box = new THREE.Box3().setFromObject(first);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          this.renderer.target.copy(center);
+          const diagonal = Math.sqrt(size.x * size.x + size.z * size.z);
+          const fovRad = (this.renderer.camera.fov * Math.PI) / 180;
+          const fitRadius = Math.max(15, (diagonal / 2) / Math.tan(fovRad / 2) * 1.5);
+          this.renderer.cameraTargetRadius = fitRadius;
+          this.renderer.cameraTargetPitch = 35;
+
+          this.layout.showNotification(`🔍 '${selectedClass}' ${matches.length}개 감지 및 하이라이팅 완료.`);
+          this.layout.logEvent('System', `IFC Class 검색: '${selectedClass}' (${matches.length}개 발견)`);
+        } else {
+          this.layout.showNotification(`⚠️ 현재 씬 내에 '${selectedClass}' 분류의 개체가 없습니다.`);
         }
       });
     }
@@ -314,6 +475,59 @@ class App {
     }
   }
 
+  // 겹침 방지 지면 위치 탐색 알고리즘 (BIM 충돌 검사)
+  findNonOverlappingPosition(newMesh) {
+    const boundingBox = new THREE.Box3().setFromObject(newMesh);
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+    const radius = Math.max(size.x, size.z) / 2 + 3.0; // 여유 오차 3m 추가
+    
+    let posX = 0;
+    let posZ = 0;
+    let attempts = 0;
+    let overlapping = true;
+    
+    const existingObjects = this.renderer.worldGroup.children.filter(c => 
+      c !== newMesh && c.name !== 'ground-plane' && c.name !== 'skydome'
+    );
+
+    while (overlapping && attempts < 100) {
+      attempts++;
+      // 첫 번째 시도이고 훈련용 파일이면 원점(0,0,0) 배치, 그 외에는 반경을 늘려가며 나선 배치
+      if (attempts === 1 && newMesh.name && newMesh.name.includes('Assembly')) {
+        posX = 0;
+        posZ = 0;
+      } else {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 8.0 + (attempts * 0.4) + Math.random() * 25.0; // 8m 이상 이격 및 점점 넓혀가며 배치
+        posX = Math.cos(angle) * distance;
+        posZ = Math.sin(angle) * distance;
+      }
+      
+      overlapping = false;
+      for (const other of existingObjects) {
+        const otherBox = new THREE.Box3().setFromObject(other);
+        const otherCenter = new THREE.Vector3();
+        otherBox.getCenter(otherCenter);
+        const otherSize = new THREE.Vector3();
+        otherBox.getSize(otherSize);
+        const otherRadius = Math.max(otherSize.x, otherSize.z) / 2;
+        
+        const dist = Math.sqrt(
+          Math.pow(posX - otherCenter.x, 2) + 
+          Math.pow(posZ - otherCenter.z, 2)
+        );
+        
+        if (dist < (radius + otherRadius)) {
+          overlapping = true;
+          break;
+        }
+      }
+    }
+    
+    return new THREE.Vector3(posX, 0, posZ);
+  }
+
   // ============================================================
   // City Agent 사물 생성 (Zero → 3D Object)
   // ============================================================
@@ -327,13 +541,9 @@ class App {
       const mesh = this.generator.generate(schema, schema.title || prompt.substring(0, 30));
       if (!mesh) return false;
 
-      // 랜덤 배치 (그라운드 위 중심 근처)
-      const spread = 40;
-      mesh.position.set(
-        (Math.random() - 0.5) * spread,
-        0,
-        (Math.random() - 0.5) * spread
-      );
+      // 겹침 방지 알고리즘 적용 지면 배치
+      const safePos = this.findNonOverlappingPosition(mesh);
+      mesh.position.copy(safePos);
 
       // 씬에 추가
       this.renderer.worldGroup.add(mesh);

@@ -134,6 +134,86 @@ export class ProceduralGenerator {
       );
       createdMesh.name = `room-${Date.now().toString().substring(8)}`;
     }
+    else if (type === 'IfcWall') {
+      createdMesh = this.createParametricWall(
+        schema.predefinedType || 'SOLIDWALL',
+        schema.dimensions || {},
+        schema.customColor || '#8c8c96',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00FF99'
+      );
+      createdMesh.name = `wall-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcColumn') {
+      createdMesh = this.createParametricColumn(
+        schema.predefinedType || 'COLUMN',
+        schema.dimensions || {},
+        schema.customColor || '#7a7a85',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00FFFF'
+      );
+      createdMesh.name = `column-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcSlab') {
+      createdMesh = this.createParametricSlab(
+        schema.predefinedType || 'FLOOR',
+        schema.dimensions || {},
+        schema.customColor || '#3e3e48',
+        schema.neonStyle || 'flow',
+        schema.emissiveColor || '#FF33AA'
+      );
+      createdMesh.name = `slab-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcRoof') {
+      createdMesh = this.createParametricRoof(
+        schema.predefinedType || 'ROOF',
+        schema.dimensions || {},
+        schema.customColor || '#6c4c8c',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#FFAA00'
+      );
+      createdMesh.name = `roof-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcFooting') {
+      createdMesh = this.createParametricFooting(
+        schema.predefinedType || 'STRIP_FOOTING',
+        schema.dimensions || {},
+        schema.customColor || '#55555c',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00F0FF'
+      );
+      createdMesh.name = `footing-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcBeam') {
+      createdMesh = this.createParametricBeam(
+        schema.predefinedType || 'GIRDER',
+        schema.dimensions || {},
+        schema.customColor || '#8c8c96',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00FF99'
+      );
+      createdMesh.name = `beam-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcDiscreteAccessory') {
+      createdMesh = this.createParametricDiscreteAccessory(
+        schema.predefinedType || 'SHOE',
+        schema.dimensions || {},
+        schema.customColor || '#aaaaaf',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#00FFFF'
+      );
+      createdMesh.name = `accessory-${Date.now().toString().substring(8)}`;
+    }
+    else if (type === 'IfcBuildingElementProxy') {
+      createdMesh = this.createParametricBuildingElementProxy(
+        schema.predefinedType || 'USERDEFINED',
+        schema.dimensions || {},
+        schema.customColor || '#ffffff',
+        schema.neonStyle || 'pulse',
+        schema.emissiveColor || '#ffffff'
+      );
+      createdMesh.name = `proxy-${Date.now().toString().substring(8)}`;
+    }
 
     else if (type === 'modular-assembly' || schema.assembly) {
       const assemblyGroup = new THREE.Group();
@@ -152,6 +232,41 @@ export class ProceduralGenerator {
           case 'block-window':
             blockMesh = this.createBlockWindow(colorHex);
             break;
+          case 'block-window-circle': {
+            const circleGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.TorusGeometry(0.8, 0.08, 12, 32),
+              new THREE.MeshStandardMaterial({ color: 0x22222b, roughness: 0.5 })
+            );
+            frame.position.y = 0.8;
+            const glass = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.76, 0.76, 0.04, 32),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.0, transparent: true, opacity: 0.4 })
+            );
+            glass.rotation.x = Math.PI / 2;
+            glass.position.set(0, 0.8, 0);
+            glass.name = 'window-glass';
+            circleGroup.add(frame, glass);
+            blockMesh = circleGroup;
+            break;
+          }
+          case 'block-window-tall': {
+            const tallGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4, 2.2, 0.12),
+              new THREE.MeshStandardMaterial({ color: 0x22222b })
+            );
+            frame.position.y = 1.1;
+            const glass = new THREE.Mesh(
+              new THREE.BoxGeometry(0.24, 2.0, 0.04),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.5 })
+            );
+            glass.position.set(0, 1.1, 0.05);
+            glass.name = 'window-glass';
+            tallGroup.add(frame, glass);
+            blockMesh = tallGroup;
+            break;
+          }
           case 'block-bench':
             blockMesh = this.createBlockBench(colorHex);
             break;
@@ -161,12 +276,502 @@ export class ProceduralGenerator {
           case 'block-gate':
             blockMesh = this.createBlockGate(colorHex);
             break;
+          case 'block-door-wood':
+            blockMesh = this.createBlockDoorWood(colorHex);
+            break;
+          case 'block-door-steel':
+            blockMesh = this.createBlockDoorSteel(colorHex);
+            break;
+          case 'block-door-glass':
+            blockMesh = this.createBlockDoorGlass(colorHex);
+            break;
+          case 'block-gate-slide': {
+            const slideGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.BoxGeometry(1.8, 2.2, 0.16),
+              new THREE.MeshStandardMaterial({ color: 0x22222b })
+            );
+            frame.position.y = 1.1;
+            const doorL = new THREE.Mesh(
+              new THREE.BoxGeometry(0.76, 2.0, 0.06),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.2, metalness: 0.8 })
+            );
+            doorL.position.set(-0.4, 1.1, 0);
+            doorL.name = 'slide-door-l';
+            const doorR = doorL.clone();
+            doorR.position.x = 0.4;
+            doorR.name = 'slide-door-r';
+            slideGroup.add(frame, doorL, doorR);
+            blockMesh = slideGroup;
+            break;
+          }
+          case 'block-gate-hatch': {
+            const hatchGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.TorusGeometry(1.0, 0.1, 12, 32),
+              new THREE.MeshStandardMaterial({ color: 0x55555f, metalness: 0.8 })
+            );
+            frame.position.y = 1.0;
+            const door = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.9, 0.9, 0.08, 32),
+              new THREE.MeshStandardMaterial({ color: 0x222225, roughness: 0.3 })
+            );
+            door.rotation.x = Math.PI / 2;
+            door.position.set(0, 1.0, 0);
+            const core = new THREE.Mesh(
+              new THREE.SphereGeometry(0.25, 16, 16),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 2.0 })
+            );
+            core.position.set(0, 1.0, 0.05);
+            core.name = 'gate-core';
+            hatchGroup.add(frame, door, core);
+            blockMesh = hatchGroup;
+            break;
+          }
+          case 'block-slab':
+            blockMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 1.0, 1.0),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8, metalness: 0.1 })
+            );
+            break;
+          case 'block-wall':
+            blockMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 1.0, 1.0),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.7, metalness: 0.2 })
+            );
+            break;
+          case 'block-roof':
+            // Triangular prism roof geometry (1m wide, 0.5m high, 1m deep)
+            const roofGeom = new THREE.BufferGeometry();
+            const rv = new Float32Array([
+              -0.5, 0, 0.5,    0.5, 0, 0.5,     0, 0.5, 0.5,
+              -0.5, 0, -0.5,   0, 0.5, -0.5,   0.5, 0, -0.5,
+              -0.5, 0, -0.5,  -0.5, 0, 0.5,     0, 0.5, 0.5,
+              -0.5, 0, -0.5,   0, 0.5, 0.5,     0, 0.5, -0.5,
+               0.5, 0, 0.5,    0.5, 0, -0.5,    0, 0.5, -0.5,
+               0.5, 0, 0.5,    0, 0.5, -0.5,    0, 0.5, 0.5
+            ]);
+            roofGeom.setAttribute('position', new THREE.BufferAttribute(rv, 3));
+            roofGeom.computeVertexNormals();
+            blockMesh = new THREE.Mesh(
+              roofGeom,
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide })
+            );
+            break;
+          case 'block-roof-dome': {
+            const domeGroup = new THREE.Group();
+            const domeGeo = new THREE.SphereGeometry(0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const frame = new THREE.Mesh(
+              domeGeo,
+              new THREE.MeshBasicMaterial({ color: 0x22222b, wireframe: true })
+            );
+            const skin = new THREE.Mesh(
+              domeGeo,
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.4, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+            );
+            domeGroup.add(frame, skin);
+            blockMesh = domeGroup;
+            break;
+          }
+          case 'block-roof-pyramid': {
+            const pyrGroup = new THREE.Group();
+            const pyrGeo = new THREE.ConeGeometry(0.707, 0.5, 4);
+            pyrGeo.translate(0, 0.25, 0);
+            const body = new THREE.Mesh(
+              pyrGeo,
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, metalness: 0.3 })
+            );
+            body.rotation.y = Math.PI / 4;
+            pyrGroup.add(body);
+            blockMesh = pyrGroup;
+            break;
+          }
+          case 'block-roof-flat': {
+            const flatGroup = new THREE.Group();
+            const base = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.1, 1.0),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 })
+            );
+            base.position.y = 0.05;
+            const rim = new THREE.Mesh(
+              new THREE.BoxGeometry(1.02, 0.04, 1.02),
+              new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.8 })
+            );
+            rim.position.y = 0.12;
+            flatGroup.add(base, rim);
+            blockMesh = flatGroup;
+            break;
+          }
+          case 'block-window-hexagon': {
+            const hexGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.RingGeometry(0.7, 0.8, 6),
+              new THREE.MeshStandardMaterial({ color: 0x22222b, roughness: 0.5, side: THREE.DoubleSide })
+            );
+            frame.position.y = 0.8;
+            frame.rotation.z = Math.PI / 6;
+            const glass = new THREE.Mesh(
+              new THREE.RingGeometry(0, 0.7, 6),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+            );
+            glass.position.set(0, 0.8, 0.02);
+            glass.rotation.z = Math.PI / 6;
+            glass.name = 'window-glass';
+            hexGroup.add(frame, glass);
+            blockMesh = hexGroup;
+            break;
+          }
+          case 'block-gate-portal': {
+            const portalGroup = new THREE.Group();
+            const frame = new THREE.Mesh(
+              new THREE.BoxGeometry(1.8, 2.2, 0.2),
+              new THREE.MeshStandardMaterial({ color: 0x33333f, metalness: 0.8, roughness: 0.2 })
+            );
+            frame.position.y = 1.1;
+            
+            const ring = new THREE.Mesh(
+              new THREE.TorusGeometry(0.85, 0.05, 8, 32),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.5 })
+            );
+            ring.position.set(0, 1.1, 0.06);
+            ring.name = 'portal-ring';
+            
+            const forcefield = new THREE.Mesh(
+              new THREE.PlaneGeometry(1.4, 2.0),
+              new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 2.0,
+                transparent: true,
+                opacity: 0.6,
+                side: THREE.DoubleSide
+              })
+            );
+            forcefield.position.set(0, 1.1, 0.01);
+            forcefield.name = 'portal-forcefield';
+            
+            portalGroup.add(frame, ring, forcefield);
+            blockMesh = portalGroup;
+            break;
+          }
+          case 'block-footing': {
+            const footingGroup = new THREE.Group();
+            const footingBase = new THREE.Mesh(
+              new THREE.BoxGeometry(1.5, 0.4, 1.5),
+              new THREE.MeshStandardMaterial({ color: 0x55555c, roughness: 0.9, metalness: 0.1 })
+            );
+            footingBase.position.y = 0.2;
+            const footingTop = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.2, 1.0),
+              new THREE.MeshStandardMaterial({ color: 0x3d3d44, roughness: 0.8 })
+            );
+            footingTop.position.y = 0.5;
+            
+            const boltMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.5 });
+            const bp = [[0.4, 0.4], [-0.4, 0.4], [0.4, -0.4], [-0.4, -0.4]];
+            bp.forEach(([bx, bz], i) => {
+              const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.15, 6), boltMat);
+              bolt.position.set(bx, 0.625, bz);
+              bolt.name = `bolt-${i}`;
+              footingGroup.add(bolt);
+            });
+
+            footingGroup.add(footingBase, footingTop);
+            blockMesh = footingGroup;
+            break;
+          }
+          case 'block-beam': {
+            const beamGroup = new THREE.Group();
+            const body = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.3, 0.3),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.8 })
+            );
+            body.name = 'beam-body';
+            
+            const neonMat = new THREE.MeshStandardMaterial({ color: 0x00ff99, emissive: 0x00ff99, emissiveIntensity: 1.5 });
+            const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.04, 0.02), neonMat);
+            stripeL.position.set(0, 0, 0.16);
+            stripeL.name = 'beam-neon-l';
+            const stripeR = stripeL.clone();
+            stripeR.position.z = -0.16;
+            stripeR.name = 'beam-neon-r';
+            
+            beamGroup.add(body, stripeL, stripeR);
+            blockMesh = beamGroup;
+            break;
+          }
+          case 'block-accessory': {
+            const shoeGroup = new THREE.Group();
+            const plateBase = new THREE.Mesh(
+              new THREE.BoxGeometry(0.5, 0.1, 0.5),
+              new THREE.MeshStandardMaterial({ color: 0xaaaaaf, roughness: 0.3, metalness: 0.8 })
+            );
+            plateBase.position.y = 0.05;
+            
+            const wallL = new THREE.Mesh(
+              new THREE.BoxGeometry(0.06, 0.4, 0.5),
+              new THREE.MeshStandardMaterial({ color: 0x99999f, roughness: 0.3, metalness: 0.8 })
+            );
+            wallL.position.set(-0.22, 0.25, 0);
+            const wallR = wallL.clone();
+            wallR.position.x = 0.22;
+            
+            const pin = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.03, 0.52, 8),
+              new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.2 })
+            );
+            pin.rotation.z = Math.PI / 2;
+            pin.position.set(0, 0.25, 0);
+            pin.name = 'shoe-pin';
+            
+            shoeGroup.add(plateBase, wallL, wallR, pin);
+            blockMesh = shoeGroup;
+            break;
+          }
+          case 'block-proxy': {
+            const proxyGroup = new THREE.Group();
+            const ring = new THREE.Mesh(
+              new THREE.TorusGeometry(0.6, 0.03, 8, 32),
+              new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2 })
+            );
+            ring.rotation.x = Math.PI / 2;
+            ring.name = 'proxy-ring';
+            
+            const axisX = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.02, 1.4, 8),
+              new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff3333, emissiveIntensity: 1.5 })
+            );
+            axisX.rotation.z = Math.PI / 2;
+            axisX.name = 'axis-x';
+            
+            const axisY = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.02, 1.4, 8),
+              new THREE.MeshStandardMaterial({ color: 0x33ff33, emissive: 0x33ff33, emissiveIntensity: 1.5 })
+            );
+            axisY.name = 'axis-y';
+            
+            const axisZ = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.02, 1.4, 8),
+              new THREE.MeshStandardMaterial({ color: 0x3333ff, emissive: 0x3333ff, emissiveIntensity: 1.5 })
+            );
+            axisZ.rotation.x = Math.PI / 2;
+            axisZ.name = 'axis-z';
+            
+            proxyGroup.add(ring, axisX, axisY, axisZ);
+            blockMesh = proxyGroup;
+            break;
+          }
+          case 'block-slab': {
+            const slabGroup = new THREE.Group();
+            const slabBody = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 1.0, 1.0),
+              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.85, metalness: 0.1 })
+            );
+            slabBody.name = 'slab-body';
+            slabGroup.add(slabBody);
+            // Neon border edges
+            const neonSlabMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8 });
+            const edgeGeoX = new THREE.BoxGeometry(1.02, 0.03, 0.03);
+            const edgeGeoZ = new THREE.BoxGeometry(0.03, 0.03, 1.02);
+            const borders = [
+              { geo: edgeGeoX, pos: [0, 0.51, 0.51] },
+              { geo: edgeGeoX, pos: [0, 0.51, -0.51] },
+              { geo: edgeGeoZ, pos: [0.51, 0.51, 0] },
+              { geo: edgeGeoZ, pos: [-0.51, 0.51, 0] },
+            ];
+            borders.forEach(({ geo, pos }, i) => {
+              const e = new THREE.Mesh(geo, neonSlabMat);
+              e.position.set(...pos);
+              e.name = `slab-edge-${i}`;
+              slabGroup.add(e);
+            });
+            blockMesh = slabGroup;
+            break;
+          }
+          // ─── OBJ 내장 오브젝트 ──────────────────────────────
+          case 'block-toilet': {
+            const toiletGrp = new THREE.Group();
+            // 변기 볈 (소도구)
+            const seat = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.12, 0.8),
+              new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.3, metalness: 0.1 })
+            );
+            seat.position.y = 0.06;
+            // 나팔 (tank)
+            const tank = new THREE.Mesh(
+              new THREE.BoxGeometry(0.65, 0.35, 0.18),
+              new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.3 })
+            );
+            tank.position.set(0, 0.3, -0.41);
+            tank.name = 'toilet-tank';
+            // 변기 발광 라인
+            const rim = new THREE.Mesh(
+              new THREE.TorusGeometry(0.3, 0.025, 8, 24),
+              new THREE.MeshStandardMaterial({ color: 0x00ccff, emissive: 0x00ccff, emissiveIntensity: 0.4 })
+            );
+            rim.rotation.x = Math.PI / 2;
+            rim.position.set(0, 0.13, 0.05);
+            rim.name = 'toilet-rim';
+            toiletGrp.add(seat, tank, rim);
+            blockMesh = toiletGrp;
+            break;
+          }
+          case 'block-sink': {
+            const sinkGrp = new THREE.Group();
+            // 세면대 본체
+            const basin = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.18, 1.0),
+              new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.25, metalness: 0.2 })
+            );
+            basin.position.y = 0.09;
+            // 세면대 볼
+            const bowl = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.24, 0.2, 0.12, 16),
+              new THREE.MeshStandardMaterial({ color: 0xd0d0e0, roughness: 0.2, metalness: 0.3 })
+            );
+            bowl.position.set(0, 0.18, 0);
+            bowl.name = 'sink-bowl';
+            // 수도꼭
+            const faucet = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.02, 0.22, 8),
+              new THREE.MeshStandardMaterial({ color: 0xaaaacc, metalness: 0.9, roughness: 0.1 })
+            );
+            faucet.position.set(0, 0.33, -0.1);
+            faucet.name = 'sink-faucet';
+            sinkGrp.add(basin, bowl, faucet);
+            blockMesh = sinkGrp;
+            break;
+          }
+          case 'block-bathtub': {
+            const tubGrp = new THREE.Group();
+            // 욕조 외경
+            const outer = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.55, 1.0),
+              new THREE.MeshStandardMaterial({ color: 0xe0e0f0, roughness: 0.3, metalness: 0.1 })
+            );
+            outer.position.y = 0.275;
+            // 욕조 내부 (hollowed feel 시각화)
+            const inner = new THREE.Mesh(
+              new THREE.BoxGeometry(0.84, 0.38, 0.84),
+              new THREE.MeshStandardMaterial({ color: 0xb8d4f0, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.85 })
+            );
+            inner.position.y = 0.46;
+            inner.name = 'tub-water';
+            // 림 네온
+            const tubRim = new THREE.Mesh(
+              new THREE.BoxGeometry(1.02, 0.04, 1.02),
+              new THREE.MeshStandardMaterial({ color: 0x00ddff, emissive: 0x00ddff, emissiveIntensity: 0.5 })
+            );
+            tubRim.position.y = 0.572;
+            tubRim.name = 'tub-rim';
+            tubGrp.add(outer, inner, tubRim);
+            blockMesh = tubGrp;
+            break;
+          }
+          case 'block-kitchen': {
+            const kitGrp = new THREE.Group();
+            // 싱크대 본체
+            const cabinet = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.9, 1.0),
+              new THREE.MeshStandardMaterial({ color: colorHex || '#c0c0cc', roughness: 0.5, metalness: 0.2 })
+            );
+            cabinet.position.y = 0.45;
+            cabinet.name = 'kitchen-cabinet';
+            // 싱크 본체
+            const kitSink = new THREE.Mesh(
+              new THREE.BoxGeometry(0.7, 0.06, 0.42),
+              new THREE.MeshStandardMaterial({ color: 0xaaaacc, metalness: 0.8, roughness: 0.1 })
+            );
+            kitSink.position.set(-0.12, 0.93, 0);
+            kitSink.name = 'kitchen-sink';
+            // 수도꼭
+            const kitFaucet = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.018, 0.018, 0.18, 8),
+              new THREE.MeshStandardMaterial({ color: 0xbbbbcc, metalness: 0.95 })
+            );
+            kitFaucet.position.set(-0.12, 1.06, -0.12);
+            kitFaucet.name = 'kitchen-faucet';
+            // 카운터탑 라인 조명
+            const kitLine = new THREE.Mesh(
+              new THREE.BoxGeometry(1.02, 0.02, 0.02),
+              new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.8 })
+            );
+            kitLine.position.set(0, 0.91, 0.51);
+            kitLine.name = 'kitchen-neon';
+            kitGrp.add(cabinet, kitSink, kitFaucet, kitLine);
+            blockMesh = kitGrp;
+            break;
+          }
+          case 'block-gas': {
+            const gasGrp = new THREE.Group();
+            // 레인지 본체
+            const top = new THREE.Mesh(
+              new THREE.BoxGeometry(1.0, 0.08, 1.0),
+              new THREE.MeshStandardMaterial({ color: 0x888890, roughness: 0.4, metalness: 0.6 })
+            );
+            top.position.y = 0.04;
+            // 버너 4개
+            const burnerMat = new THREE.MeshStandardMaterial({ color: 0x444455, roughness: 0.3, metalness: 0.8 });
+            const flameMat  = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff6600, emissiveIntensity: 2.0, transparent: true, opacity: 0.85 });
+            const burnerPos = [[-0.28, 0.28], [0.28, 0.28], [-0.28, -0.28], [0.28, -0.28]];
+            burnerPos.forEach(([bx, bz], i) => {
+              const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.1, 0.02, 8, 20),
+                burnerMat
+              );
+              ring.rotation.x = Math.PI / 2;
+              ring.position.set(bx, 0.09, bz);
+              ring.name = `burner-ring-${i}`;
+              const flame = new THREE.Mesh(
+                new THREE.ConeGeometry(0.07, 0.06, 8),
+                flameMat
+              );
+              flame.position.set(bx, 0.135, bz);
+              flame.name = `burner-flame-${i}`;
+              gasGrp.add(ring, flame);
+            });
+            gasGrp.add(top);
+            blockMesh = gasGrp;
+            break;
+          }
           default:
             blockMesh = new THREE.Mesh(
               new THREE.BoxGeometry(0.5, 0.5, 0.5),
               new THREE.MeshStandardMaterial({ color: colorHex })
             );
         }
+
+        let ifcType = 'IfcElement';
+        const typeL = item.blockType.toLowerCase();
+        if (typeL.includes('wall')) ifcType = 'IfcWall';
+        else if (typeL.includes('pillar')) ifcType = 'IfcColumn';
+        else if (typeL.includes('window')) ifcType = 'IfcWindow';
+        else if (typeL.includes('gate') || typeL.includes('door') || typeL.includes('hatch') || typeL.includes('portal')) ifcType = 'IfcDoor';
+        else if (typeL.includes('roof')) ifcType = 'IfcRoof';
+        else if (typeL.includes('slab')) ifcType = 'IfcSlab';
+        else if (typeL.includes('footing')) ifcType = 'IfcFooting';
+        else if (typeL.includes('beam')) ifcType = 'IfcBeam';
+        else if (typeL.includes('accessory')) ifcType = 'IfcDiscreteAccessory';
+        else if (typeL.includes('proxy')) ifcType = 'IfcBuildingElementProxy';
+        else if (typeL.includes('bench') || typeL.includes('workstation')) ifcType = 'IfcSpace';
+        // OBJ 내장 시설
+        else if (typeL.includes('toilet') || typeL.includes('sink') || typeL.includes('bathtub')) ifcType = 'IfcSanitaryTerminal';
+        else if (typeL.includes('kitchen') || typeL.includes('gas')) ifcType = 'IfcElectricAppliance';
+
+        blockMesh.userData = {
+          interactive: true,
+          type: ifcType,
+          name: `${ifcType} (${item.blockType.replace('block-', '')})`,
+          state: 'BIM 개별 부재 시공 완료',
+          neonStyle: 'pulse'
+        };
+
+        // If block has a child (e.g. portal-forcefield, screen, glass, gate-core) that has a glowing emissive material, let's copy its color to userData
+        blockMesh.traverse(child => {
+          if (child.isMesh && child.material && child.material.emissive && child.material.emissive.getHex() !== 0) {
+            blockMesh.userData.emissiveColor = '#' + child.material.emissive.getHexString();
+          }
+        });
 
         if (item.position) {
           blockMesh.position.set(item.position[0], item.position[1], item.position[2]);
@@ -1294,6 +1899,149 @@ export class ProceduralGenerator {
     return gateGroup;
   }
 
+  // [block-door-wood] 사각형 목재 방문 및 틀 조립 모듈 (방문은 나무, 틀과 사각문 정합)
+  createBlockDoorWood(colorHex) {
+    const doorGroup = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({ color: '#8d6e63', roughness: 0.8 }); // 목재 틀
+    const panelMat = new THREE.MeshStandardMaterial({ color: '#d7ccc8', roughness: 0.9 }); // 사각 나무문판
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, roughness: 0.1 }); // 금색 레버 손잡이
+
+    // 1. 사각 문틀 (왼쪽, 오른쪽, 상부)
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.1, 0.12), frameMat);
+    postL.position.set(-0.47, 1.05, 0);
+    postL.castShadow = true;
+    postL.receiveShadow = true;
+
+    const postR = postL.clone();
+    postR.position.x = 0.47;
+
+    const header = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.12), frameMat);
+    header.position.set(0, 2.07, 0);
+    header.castShadow = true;
+    header.receiveShadow = true;
+
+    doorGroup.add(postL, postR, header);
+
+    // 2. 개폐형 사각 나무 문판
+    const doorHinge = new THREE.Group();
+    doorHinge.position.set(-0.44, 1.05, 0);
+    doorGroup.add(doorHinge);
+
+    const doorBody = new THREE.Mesh(new THREE.BoxGeometry(0.88, 1.98, 0.04), panelMat);
+    doorBody.position.set(0.44, 0, 0);
+    doorBody.castShadow = true;
+    doorHinge.add(doorBody);
+
+    // 문 손잡이
+    const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 8), goldMat);
+    handleBar.rotation.z = Math.PI / 2;
+    handleBar.position.set(0.36, 0, 0.03);
+    doorBody.add(handleBar);
+
+    doorHinge.name = "interactive-door";
+    doorHinge.userData = { type: 'door', isOpen: false, doorType: 'wood' };
+
+    return doorGroup;
+  }
+
+  // [block-door-steel] 사각형 철제 현관문 및 틀 조립 모듈 (현관문은 철제, 틀과 사각문 정합)
+  createBlockDoorSteel(colorHex) {
+    const doorGroup = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x33333f, metalness: 0.8, roughness: 0.2 }); // 철제 문틀
+    const panelMat = new THREE.MeshStandardMaterial({ color: 0x455a64, metalness: 0.6, roughness: 0.4 }); // 철제 패널
+    const lockMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.1 }); // 디지털 도어락 패드
+
+    // 1. 철제 사각 문틀 (왼쪽, 오른쪽, 상부)
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.1, 0.16), frameMat);
+    postL.position.set(-0.46, 1.05, 0);
+    postL.castShadow = true;
+
+    const postR = postL.clone();
+    postR.position.x = 0.46;
+
+    const header = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.16), frameMat);
+    header.position.set(0, 2.06, 0);
+    header.castShadow = true;
+
+    doorGroup.add(postL, postR, header);
+
+    // 2. 개폐형 사각 철제 문판
+    const doorHinge = new THREE.Group();
+    doorHinge.position.set(-0.42, 1.05, 0);
+    doorGroup.add(doorHinge);
+
+    const doorBody = new THREE.Mesh(new THREE.BoxGeometry(0.84, 1.96, 0.06), panelMat);
+    doorBody.position.set(0.42, 0, 0);
+    doorBody.castShadow = true;
+    doorHinge.add(doorBody);
+
+    // 디지털 도어락 및 손잡이
+    const lockPad = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.25, 0.02), lockMat);
+    lockPad.position.set(0.32, 0.1, 0.04);
+    doorBody.add(lockPad);
+
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.04), frameMat);
+    handle.position.set(0.32, 0, 0.06);
+    doorBody.add(handle);
+
+    doorHinge.name = "interactive-door";
+    doorHinge.userData = { type: 'door', isOpen: false, doorType: 'steel' };
+
+    return doorGroup;
+  }
+
+  // [block-door-glass] 베란다/발코니 전용 대형 슬라이딩 유리문 및 프레임 조립 모듈
+  createBlockDoorGlass(colorHex) {
+    const doorGroup = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x22222b, roughness: 0.3 }); // 알루미늄 검은색 프레임
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x00ddff,
+      emissive: 0x00ddff,
+      emissiveIntensity: 0.4,
+      transparent: true,
+      opacity: 0.25,
+      roughness: 0.1,
+      metalness: 0.9
+    });
+
+    // 1. 사각 프레임 (틀 - 왼쪽, 오른쪽, 상부, 하부)
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.1, 0.12), frameMat);
+    postL.position.set(-0.47, 1.05, 0);
+    postL.castShadow = true;
+
+    const postR = postL.clone();
+    postR.position.x = 0.47;
+
+    const header = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.12), frameMat);
+    header.position.set(0, 2.07, 0);
+    header.castShadow = true;
+
+    const footer = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.12), frameMat);
+    footer.position.set(0, 0.03, 0);
+    footer.castShadow = true;
+
+    doorGroup.add(postL, postR, header, footer);
+
+    // 2. 대형 투명 유리문 (Glass Sliders - 2짝 슬라이딩 구조)
+    const glassL = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.96, 0.02), glassMat);
+    glassL.position.set(-0.22, 1.03, -0.02);
+    glassL.name = "window-glass";
+
+    const frameL = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.98, 0.03), frameMat);
+    frameL.position.set(-0.22, 1.03, -0.02);
+    
+    const glassR = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.96, 0.02), glassMat);
+    glassR.position.set(0.22, 1.03, 0.02);
+    glassR.name = "window-glass";
+
+    const frameR = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.98, 0.03), frameMat);
+    frameR.position.set(0.22, 1.03, 0.02);
+
+    doorGroup.add(glassL, frameL, glassR, frameR);
+
+    return doorGroup;
+  }
+
   // 5. [IfcRailway] 파라메트릭 철도 및 복선 궤도 설계
   createParametricRailway(predefinedType, dims, color, neonStyle, emissiveColor) {
     const railGroup = new THREE.Group();
@@ -2388,5 +3136,411 @@ export class ProceduralGenerator {
     this.renderer.interactiveObjects.push(roomGroup);
     return roomGroup;
   }
+
+  // 13. [IfcWall] 파라메트릭 벽체
+  createParametricWall(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const wallGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const length = dims.length || 8;
+    const height = dims.height || 3.5;
+    const thickness = dims.thickness || 0.25;
+
+    const wallMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.7, metalness: 0.2 });
+    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(length, height, thickness), wallMat);
+    wallMesh.position.set(0, height / 2, 0);
+    wallMesh.castShadow = true;
+    wallMesh.receiveShadow = true;
+    wallGroup.add(wallMesh);
+
+    // Sci-fi neon lines running horizontally across the wall
+    const pipeGeo = new THREE.CylinderGeometry(0.04, 0.04, length, 8);
+    pipeGeo.rotateZ(Math.PI / 2);
+    const neonMat = new THREE.MeshStandardMaterial({
+      color: emColor,
+      emissive: emColor,
+      emissiveIntensity: 1.5,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    const neonPipe1 = new THREE.Mesh(pipeGeo, neonMat);
+    neonPipe1.position.set(0, height * 0.3, thickness / 2 + 0.02);
+    neonPipe1.name = 'wall-neon-1';
+    wallGroup.add(neonPipe1);
+
+    const neonPipe2 = new THREE.Mesh(pipeGeo, neonMat);
+    neonPipe2.position.set(0, height * 0.7, thickness / 2 + 0.02);
+    neonPipe2.name = 'wall-neon-2';
+    wallGroup.add(neonPipe2);
+
+    wallGroup.userData = {
+      interactive: true,
+      type: 'IfcWall',
+      ifcType: 'IfcWall',
+      predefinedType,
+      state: '벽체 설계 활성'
+    };
+
+    this.renderer.worldGroup.add(wallGroup);
+    this.renderer.interactiveObjects.push(wallGroup);
+    return wallGroup;
+  }
+
+  // 14. [IfcColumn] 파라메트릭 기둥
+  createParametricColumn(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const colGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const height = dims.height || 4.5;
+    const radius = dims.radius || 0.4;
+
+    const colMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.5, metalness: 0.4 });
+    const pillarGeo = new THREE.CylinderGeometry(radius, radius, height, 16);
+    const pillar = new THREE.Mesh(pillarGeo, colMat);
+    pillar.position.set(0, height / 2, 0);
+    pillar.castShadow = true;
+    pillar.receiveShadow = true;
+    colGroup.add(pillar);
+
+    // Top/Bottom rings
+    const ringGeo = new THREE.TorusGeometry(radius + 0.05, 0.05, 8, 24);
+    ringGeo.rotateX(Math.PI / 2);
+    
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: emColor,
+      emissive: emColor,
+      emissiveIntensity: 1.8
+    });
+
+    const ringTop = new THREE.Mesh(ringGeo, ringMat);
+    ringTop.position.set(0, height - 0.1, 0);
+    ringTop.name = 'col-ring-top';
+    colGroup.add(ringTop);
+
+    const ringBottom = new THREE.Mesh(ringGeo, ringMat);
+    ringBottom.position.set(0, 0.1, 0);
+    ringBottom.name = 'col-ring-bottom';
+    colGroup.add(ringBottom);
+
+    colGroup.userData = {
+      interactive: true,
+      type: 'IfcColumn',
+      ifcType: 'IfcColumn',
+      predefinedType,
+      state: '기둥 지지 설계 활성'
+    };
+
+    this.renderer.worldGroup.add(colGroup);
+    this.renderer.interactiveObjects.push(colGroup);
+    return colGroup;
+  }
+
+  // 15. [IfcSlab] 파라메트릭 슬래브
+  createParametricSlab(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const slabGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const width = dims.width || 8;
+    const depth = dims.depth || 8;
+    const thickness = dims.thickness || 0.3;
+
+    const slabMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.8, metalness: 0.1 });
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(width, thickness, depth), slabMat);
+    slab.position.set(0, thickness / 2, 0);
+    slab.receiveShadow = true;
+    slab.castShadow = true;
+    slabGroup.add(slab);
+
+    // Glowing neon grid borders
+    const neonMat = new THREE.MeshStandardMaterial({
+      color: emColor,
+      emissive: emColor,
+      emissiveIntensity: 1.5,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    const borderGeoX = new THREE.CylinderGeometry(0.03, 0.03, width, 6);
+    borderGeoX.rotateZ(Math.PI / 2);
+    const borderGeoZ = new THREE.CylinderGeometry(0.03, 0.03, depth, 6);
+    borderGeoZ.rotateX(Math.PI / 2);
+
+    const b1 = new THREE.Mesh(borderGeoX, neonMat);
+    b1.position.set(0, thickness + 0.01, depth / 2);
+    b1.name = 'slab-border-1';
+    
+    const b2 = new THREE.Mesh(borderGeoX, neonMat);
+    b2.position.set(0, thickness + 0.01, -depth / 2);
+    b2.name = 'slab-border-2';
+
+    const b3 = new THREE.Mesh(borderGeoZ, neonMat);
+    b3.position.set(width / 2, thickness + 0.01, 0);
+    b3.name = 'slab-border-3';
+
+    const b4 = new THREE.Mesh(borderGeoZ, neonMat);
+    b4.position.set(-width / 2, thickness + 0.01, 0);
+    b4.name = 'slab-border-4';
+
+    slabGroup.add(b1, b2, b3, b4);
+
+    slabGroup.userData = {
+      interactive: true,
+      type: 'IfcSlab',
+      ifcType: 'IfcSlab',
+      predefinedType,
+      state: '슬래브 고정 완료'
+    };
+
+    this.renderer.worldGroup.add(slabGroup);
+    this.renderer.interactiveObjects.push(slabGroup);
+    return slabGroup;
+  }
+
+  // 16. [IfcRoof] 파라메트릭 지붕
+  createParametricRoof(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const roofGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const width = dims.width || 8;
+    const depth = dims.depth || 8;
+    const height = dims.height || 2.5;
+
+    // Create custom triangular prism roof geometry
+    const geom = new THREE.BufferGeometry();
+    const w2 = width / 2;
+    const d2 = depth / 2;
+    
+    const vertices = new Float32Array([
+      // Front Triangle Face
+      -w2, 0, d2,    w2, 0, d2,     0, height, d2,
+      // Back Triangle Face
+      -w2, 0, -d2,   0, height, -d2, w2, 0, -d2,
+      // Left Sloped Face
+      -w2, 0, -d2,  -w2, 0, d2,     0, height, d2,
+      -w2, 0, -d2,   0, height, d2, 0, height, -d2,
+      // Right Sloped Face
+       w2, 0, d2,    w2, 0, -d2,    0, height, -d2,
+       w2, 0, d2,    0, height, -d2, 0, height, d2
+    ]);
+
+    geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geom.computeVertexNormals();
+
+    const roofMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.6, metalness: 0.25, side: THREE.DoubleSide });
+    const roofMesh = new THREE.Mesh(geom, roofMat);
+    roofMesh.position.set(0, 0, 0);
+    roofMesh.castShadow = true;
+    roofMesh.receiveShadow = true;
+    roofGroup.add(roofMesh);
+
+    // Glowing Neon Ridge cap line (apex of the roof)
+    const neonMat = new THREE.MeshStandardMaterial({
+      color: emColor,
+      emissive: emColor,
+      emissiveIntensity: 1.7
+    });
+
+    const ridgeCapGeo = new THREE.CylinderGeometry(0.05, 0.05, depth, 6);
+    ridgeCapGeo.rotateX(Math.PI / 2);
+
+    const ridge = new THREE.Mesh(ridgeCapGeo, neonMat);
+    ridge.position.set(0, height + 0.02, 0);
+    ridge.name = 'roof-ridge-cap';
+    roofGroup.add(ridge);
+
+    roofGroup.userData = {
+      interactive: true,
+      type: 'IfcRoof',
+      ifcType: 'IfcRoof',
+      predefinedType,
+      state: '지붕 시공 배치 완료'
+    };
+
+    this.renderer.worldGroup.add(roofGroup);
+    this.renderer.interactiveObjects.push(roofGroup);
+    return roofGroup;
+  }
+
+  // 17. [IfcFooting] 파라메트릭 기반 기초
+  createParametricFooting(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const footingGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const w = dims.width || 3.0;
+    const d = dims.depth || 3.0;
+    const h = dims.height || 0.8;
+
+    const footingMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.9, metalness: 0.1 });
+    const footing = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), footingMat);
+    footing.position.set(0, h / 2, 0);
+    footing.castShadow = true;
+    footing.receiveShadow = true;
+    footingGroup.add(footing);
+
+    const boltMat = new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 1.5 });
+    const bx = w / 2 - 0.4;
+    const bz = d / 2 - 0.4;
+    const bp = [[bx, bz], [-bx, bz], [bx, -bz], [-bx, -bz]];
+    bp.forEach(([x, z], i) => {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 6), boltMat);
+      bolt.position.set(x, h + 0.15, z);
+      bolt.name = `footing-bolt-${i}`;
+      footingGroup.add(bolt);
+    });
+
+    footingGroup.userData = {
+      interactive: true,
+      type: 'IfcFooting',
+      ifcType: 'IfcFooting',
+      predefinedType,
+      state: '기반 기초 지지 안착 완료'
+    };
+
+    this.renderer.worldGroup.add(footingGroup);
+    this.renderer.interactiveObjects.push(footingGroup);
+    return footingGroup;
+  }
+
+  // 18. [IfcBeam] 파라메트릭 구조 보
+  createParametricBeam(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const beamGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const length = dims.length || 8.0;
+    const height = dims.height || 0.4;
+    const width = dims.width || 0.3;
+
+    const beamMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.5, metalness: 0.8 });
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(length, height, width), beamMat);
+    beam.position.set(0, height / 2, 0);
+    beam.castShadow = true;
+    beam.receiveShadow = true;
+    beamGroup.add(beam);
+
+    const neonMat = new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 1.6 });
+    const neonLineL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, length - 0.2, 8), neonMat);
+    neonLineL.rotateZ(Math.PI / 2);
+    neonLineL.position.set(0, height / 2, width / 2 + 0.02);
+    neonLineL.name = 'beam-neon-line-l';
+
+    const neonLineR = neonLineL.clone();
+    neonLineR.position.z = -width / 2 - 0.02;
+    neonLineR.name = 'beam-neon-line-r';
+
+    beamGroup.add(neonLineL, neonLineR);
+
+    beamGroup.userData = {
+      interactive: true,
+      type: 'IfcBeam',
+      ifcType: 'IfcBeam',
+      predefinedType,
+      state: '보 수평 프레임 시공 완료'
+    };
+
+    this.renderer.worldGroup.add(beamGroup);
+    this.renderer.interactiveObjects.push(beamGroup);
+    return beamGroup;
+  }
+
+  // 19. [IfcDiscreteAccessory] 파라메트릭 연결 철물
+  createParametricDiscreteAccessory(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const accGroup = new THREE.Group();
+    const mainColor = new THREE.Color(color);
+    const emColor = new THREE.Color(emissiveColor);
+
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.15, 0.8),
+      new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.3, metalness: 0.9 })
+    );
+    plate.position.y = 0.075;
+    plate.castShadow = true;
+    plate.receiveShadow = true;
+    accGroup.add(plate);
+
+    const clampL = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.6, 0.8),
+      new THREE.MeshStandardMaterial({ color: mainColor.clone().multiplyScalar(0.8), roughness: 0.3, metalness: 0.9 })
+    );
+    clampL.position.set(-0.36, 0.3, 0);
+    const clampR = clampL.clone();
+    clampR.position.x = 0.36;
+    accGroup.add(clampL, clampR);
+
+    const pin = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8),
+      new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 1.5 })
+    );
+    pin.rotation.z = Math.PI / 2;
+    pin.position.set(0, 0.3, 0);
+    pin.name = 'accessory-pin';
+    accGroup.add(pin);
+
+    accGroup.userData = {
+      interactive: true,
+      type: 'IfcDiscreteAccessory',
+      ifcType: 'IfcDiscreteAccessory',
+      predefinedType,
+      state: '철물 접합 완비'
+    };
+
+    this.renderer.worldGroup.add(accGroup);
+    this.renderer.interactiveObjects.push(accGroup);
+    return accGroup;
+  }
+
+  // 20. [IfcBuildingElementProxy] 파라메트릭 위치 참조 프록시
+  createParametricBuildingElementProxy(predefinedType, dims, color, neonStyle, emissiveColor) {
+    const proxyGroup = new THREE.Group();
+    const emColor = new THREE.Color(emissiveColor);
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.0, 0.05, 8, 32),
+      new THREE.MeshStandardMaterial({ color: emColor, emissive: emColor, emissiveIntensity: 1.2 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.name = 'proxy-ring';
+
+    const axisX = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 2.5, 8),
+      new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff3333, emissiveIntensity: 1.5 })
+    );
+    axisX.rotation.z = Math.PI / 2;
+    axisX.name = 'axis-x';
+
+    const axisY = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 2.5, 8),
+      new THREE.MeshStandardMaterial({ color: 0x33ff33, emissive: 0x33ff33, emissiveIntensity: 1.5 })
+    );
+    axisY.name = 'axis-y';
+
+    const axisZ = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 2.5, 8),
+      new THREE.MeshStandardMaterial({ color: 0x3333ff, emissive: 0x3333ff, emissiveIntensity: 1.5 })
+    );
+    axisZ.rotation.x = Math.PI / 2;
+    axisZ.name = 'axis-z';
+
+    proxyGroup.add(ring, axisX, axisY, axisZ);
+
+    proxyGroup.userData = {
+      interactive: true,
+      type: 'IfcBuildingElementProxy',
+      ifcType: 'IfcBuildingElementProxy',
+      predefinedType,
+      state: '위치 기준 좌표 활성'
+    };
+
+    this.renderer.worldGroup.add(proxyGroup);
+    this.renderer.interactiveObjects.push(proxyGroup);
+    return proxyGroup;
+  }
 }
+
 

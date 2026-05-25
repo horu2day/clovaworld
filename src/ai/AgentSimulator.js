@@ -36,9 +36,21 @@ export class AgentSimulator {
       { module: 'Plant', type: 'IfcDistributionElement', prompt: "Superluminal grid energy mast with corona discharge ring", goal: "Plan carbon-neutral power grid infrastructure" },
       { module: 'Civil', type: 'IfcSignal', prompt: "Automated quantum rail signaling mast with tri-color holographic beacon", goal: "Install secure scanning signal mast checkpoints" },
       { module: 'Civil', type: 'IfcConstructionEquipment', prompt: "Solar-powered heavy hydraulic crawler crane crawler assembly", goal: "Deploy solar luffing heavy crane assembly" },
-      { module: 'Structural', type: 'IfcSpace', prompt: "Neon-lit room with 4 walls and a glowing door", goal: "Construct habitable space modules" }
+      { module: 'Structural', type: 'IfcSpace', prompt: "Neon-lit room with 4 walls and a glowing door", goal: "Construct habitable space modules" },
+      { module: 'Structural', type: 'IfcWall', prompt: "Sleek holographic cyber security wall panel", goal: "Establish secure building partitions" },
+      { module: 'Structural', type: 'IfcColumn', prompt: "Cybernetic fluted power column with glowing neon rings", goal: "Support high-load structural platforms" },
+      { module: 'Structural', type: 'IfcSlab', prompt: "Levitating gravity-stabilized floor slab platform", goal: "Deploy elevated floor segments" },
+      { module: 'Structural', type: 'IfcRoof', prompt: "Modern translucent structural triangular roof cap", goal: "Finalize protective shelter envelope" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "가로구역(Street Block) - 4대 네온 하우스 패키지", goal: "Construct diverse urban residential street block" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "Building-Structural.ifc", goal: "Establish structural foundation, columns, and beams skeleton" },
+      // ─── 평면도 훈련 시퀀스 (실제 APT 라벨 JSON 파싱) ─────────────
+      { module: 'Structural', type: 'modular-assembly', prompt: "평면도 훈련 APT_FP_STR_000477071", goal: "Learn wall/window/door layout from real apartment blueprint" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "평면도 훈련 APT_FP_STR_009278212", goal: "Learn structural wall segmentation from large-scale APT floor plan" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "평면도 훈련 APT_FP_STR_031691685", goal: "Parse and reconstruct complex multi-unit residential structure" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "평면도 훈련 APT_FP_STR_043989218", goal: "Extract structural elements from annotated apartment floor plan" },
+      { module: 'Structural', type: 'modular-assembly', prompt: "평면도 훈련 APT_FP_STR_041610658", goal: "Learn 59m²/118m² unit structural wall patterns" },
     ];
-    this.learnedPrompts = [];
+    this.learnedPrompts = ["Building-Structural.ifc", "Building-Architecture.ifc", "가로구역(Street Block)", "평면도 훈련"];
   }
 
   // 자율 창작 백그라운드 스케줄러 가동 (30초 주기)

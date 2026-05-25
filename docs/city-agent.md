@@ -71,7 +71,9 @@ ClovaWorld 3대 원칙을 City Agent는 모두 구현한다.
 
 ---
 
-## 4. 생성 가능 사물 (IFC 4.3 기반)
+## 4. 생성 가능 사물 (IFC 4.3 및 이전 레거시 건축 규격)
+
+전 세계적인 스마트 시티 토목 인프라(IFC 4.3)와 정밀 건축물 내부 구조(IFC 2x3 & 4)를 모두 수용하도록 설계되었습니다.
 
 | IFC 타입 | 실세계 대응 | 파라메트릭 변수 |
 |----------|------------|----------------|
@@ -86,8 +88,14 @@ ClovaWorld 3대 원칙을 City Agent는 모두 구현한다.
 | `IfcDistributionElement` | 전력 마스트, 에너지 그리드 | mastHeight, ringCount |
 | `IfcSignal` | 철도 신호기 | signalHeight, colorCount |
 | `IfcGeotechnicalElement` | 지반 (TIN 지형) | resolution, heightScale |
+| `IfcWall` | 건축 벽체 (스마트 사이파이 패널 벽) | length, height, thickness |
+| `IfcColumn` | 건축 기둥 (에너지 스마트 기둥) | height, radius |
+| `IfcSlab` | 건축 바닥 슬래브 (중력 고정 플랫폼) | width, depth, thickness |
+| `IfcRoof` | 건축 지붕 (삼각 프리즘 구조물) | width, depth, height |
+| `IfcSpace` | 건축 공간 (네온 룸) | width, depth, wallHeight, wallThickness |
 
 ---
+
 
 ## 5. 상태 머신
 

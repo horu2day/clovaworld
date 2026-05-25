@@ -7,7 +7,8 @@ export class InteractionRaycaster {
     this.mouse = new THREE.Vector2();
 
     // UI 및 이벤트 연동 콜백
-    this.onObjectSelected = callbacks.onObjectSelected || (() => {});
+    this.onObjectSelected = callbacks.onObjectSelected || callbacks.onSelect || (() => {});
+    this.onDeselect = callbacks.onDeselect || (() => {});
     this.onStateChanged = callbacks.onStateChanged || (() => {});
     this.onLog = callbacks.onLog || (() => {});
     this.onSound = callbacks.onSound || (() => {});
@@ -53,7 +54,13 @@ export class InteractionRaycaster {
 
         // 즉각적 물리/애니메이션 상태 전환
         this.handleImmediateAction(hitObj);
+      } else {
+        this.selectedObject = null;
+        this.onDeselect();
       }
+    } else {
+      this.selectedObject = null;
+      this.onDeselect();
     }
   }
 

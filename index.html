@@ -57,19 +57,53 @@
 
         <!-- 2. 인터랙션 인스펙터 (선택 사물 정보 및 원격 조종) -->
         <section class="inspector-section">
-          <h3 style="margin-top: 0; color: var(--lyt-accent-purple); -webkit-text-fill-color: initial; background: none;">Interaction Inspector</h3>
-          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">뷰포트 내의 물리 사물을 클릭하여 정보를 인스펙팅하고 상호작용합니다.</p>
-          <div class="inspector-field">
-            <span class="inspector-label">사물명 (Entity)</span>
-            <span class="inspector-value" id="inspect-name">없음 (화면 내 사물 클릭)</span>
+          <h3 style="margin-top: 0; color: var(--lyt-accent-purple); -webkit-text-fill-color: initial; background: none; display: flex; justify-content: space-between; align-items: center;">
+            <span>📋 BIM Property Inspector (속성창)</span>
+            <span style="font-size: 0.65rem; background: var(--lyt-accent-purple); color: #fff; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: bold; font-family: var(--font-mono);" id="inspect-class-badge">IFC ELEMENT</span>
+          </h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.5rem;">선택된 개체의 buildingSMART 표준 속성 세트(Pset) 및 기하 물리 특성치를 정밀 출력합니다.</p>
+          
+          <div class="property-sheet" id="inspect-property-sheet" style="padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.75rem; margin-bottom: 0.8rem;">
+            <div style="color: rgba(255,255,255,0.4); text-align: center; padding: 1.5rem 0;" id="property-sheet-empty">
+              화면 내 3D 사물을 클릭하여 속성을 확인하세요.
+            </div>
           </div>
-          <div class="inspector-field">
-            <span class="inspector-label">동작 상태 (State)</span>
-            <span class="inspector-value" id="inspect-state">-</span>
+
+          <div style="border-bottom: none; margin-bottom: 0; display: flex; gap: 0.4rem;">
+            <button class="btn-action" id="btn-trigger-action" style="flex: 1; padding: 0.4rem 0.6rem; font-size: 0.75rem; font-weight: bold;">⚡ 물리 제어 실행 (Trigger)</button>
+            <button class="btn-action" id="btn-inspect-zoom" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-color: #FFD700; color: #FFD700;">📸 포커스</button>
           </div>
-          <div class="inspector-field" style="border-bottom: none; margin-bottom: 0;">
-            <span class="inspector-label">인터랙션 액션</span>
-            <button class="btn-action" id="btn-trigger-action" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">물리 제어 실행</button>
+        </section>
+
+        <!-- 2.5. IFC 클래스 선택기 및 일괄 하이라이트 -->
+        <section class="creator-section class-selector-section" style="border-left: 4px solid var(--lyt-accent-cyan);">
+          <h3 style="margin-top: 0; color: var(--lyt-accent-cyan); -webkit-text-fill-color: initial; background: none; display: flex; align-items: center; gap: 0.5rem;">
+            🔍 IFC Class Selector
+          </h3>
+          <p style="font-size: 0.78rem; color: var(--lyt-text-muted); margin-bottom: 0.8rem;">특정 IFC Class 단위로 씬의 모든 오브젝트를 실시간 선택 및 일괄 하이라이트 처리합니다.</p>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <select id="btn-class-dropdown" style="flex: 1; background: var(--lyt-bg-input); border: 1px solid #333; border-radius: 4px; padding: 0.45rem; color: #fff; font-family: var(--font-body); font-size: 0.8rem;">
+              <option value="all">전체 IFC Class (All Elements)</option>
+              <option value="IfcBridge">IfcBridge (교량)</option>
+              <option value="IfcRoad">IfcRoad (도로)</option>
+              <option value="IfcTunnel">IfcTunnel (터널)</option>
+              <option value="IfcFacility">IfcFacility (발전소/바이오돔)</option>
+              <option value="IfcWall">IfcWall (벽체)</option>
+              <option value="IfcColumn">IfcColumn (기둥)</option>
+              <option value="IfcSlab">IfcSlab (슬래브)</option>
+              <option value="IfcRoof">IfcRoof (지붕)</option>
+              <option value="IfcSpace">IfcSpace (공간/룸)</option>
+              <option value="IfcFooting">IfcFooting (기반 기초)</option>
+              <option value="IfcBeam">IfcBeam (구조 보)</option>
+              <option value="IfcDiscreteAccessory">IfcDiscreteAccessory (연결 철물)</option>
+              <option value="IfcBuildingElementProxy">IfcBuildingElementProxy (위치 참조)</option>
+              <option value="modular-assembly">modular-assembly (조립식)</option>
+            </select>
+            <button id="btn-class-select-run" class="btn-action" style="padding: 0.45rem 0.8rem; font-size: 0.78rem; font-weight: bold; border-color: var(--lyt-accent-cyan); color: var(--lyt-accent-cyan);">검색/선택</button>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--lyt-text-muted); display: flex; justify-content: space-between;">
+            <span>감지된 개체 수:</span>
+            <strong id="class-select-count-val" style="color: var(--lyt-accent-cyan); font-family: var(--font-mono);">0</strong>
           </div>
         </section>
 

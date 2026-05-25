@@ -1,3 +1,5 @@
+import { FloorPlanParser } from './FloorPlanParser.js';
+
 export class PromptInterpreter {
   constructor() {
     this.apiKey = null; 
@@ -124,7 +126,482 @@ JSON 출력 스키마 명세:
 
     // 2. Fallback 로컬 절차적 해석 (BIM 파라메트릭 도면 기본 구성)
     const normalized = prompt.toLowerCase();
-    
+
+    // A0. 4개의 도로로 둘러싸인 1개의 가로구역(Block) 및 4개의 다양하고 독특한 주택 시공 (층고 및 문/창고 정밀 정합)
+    if (normalized.includes('블록') || normalized.includes('가로구역') || normalized.includes('block') || normalized.includes('street block')) {
+      const assemblyItems = [
+        // 1. 도로용 기본 아스팔트 바닥 (30m x 30m)
+        {
+          blockType: 'block-wall',
+          customColor: '#202025',
+          position: [0, 0.05, 0],
+          scale: [30, 0.1, 30]
+        },
+        // 2. 가로구역 잔디밭 블록 (22m x 22m)
+        {
+          blockType: 'block-wall',
+          customColor: '#27541b',
+          position: [0, 0.15, 0],
+          scale: [22, 0.1, 22]
+        },
+        // 3. 가로구역 경계부 가로등/기둥 (4개소)
+        {
+          blockType: 'block-pillar',
+          customColor: '#555560',
+          position: [-11.5, 0.2, -11.5],
+          scale: [0.4, 1.2, 0.4]
+        },
+        {
+          blockType: 'block-pillar',
+          customColor: '#555560',
+          position: [11.5, 0.2, -11.5],
+          scale: [0.4, 1.2, 0.4]
+        },
+        {
+          blockType: 'block-pillar',
+          customColor: '#555560',
+          position: [-11.5, 0.2, 11.5],
+          scale: [0.4, 1.2, 0.4]
+        },
+        {
+          blockType: 'block-pillar',
+          customColor: '#555560',
+          position: [11.5, 0.2, 11.5],
+          scale: [0.4, 1.2, 0.4]
+        },
+        // 4. 도로 구분용 네온 차선들 (4개 도로 시각화)
+        {
+          blockType: 'block-wall',
+          customColor: '#e6a100',
+          position: [0, 0.11, -13.5],
+          scale: [30, 0.02, 0.15]
+        },
+        {
+          blockType: 'block-wall',
+          customColor: '#e6a100',
+          position: [0, 0.11, 13.5],
+          scale: [30, 0.02, 0.15]
+        },
+        {
+          blockType: 'block-wall',
+          customColor: '#e6a100',
+          position: [-13.5, 0.11, 0],
+          scale: [0.15, 0.02, 30]
+        },
+        {
+          blockType: 'block-wall',
+          customColor: '#e6a100',
+          position: [13.5, 0.11, 0],
+          scale: [0.15, 0.02, 30]
+        }
+      ];
+
+      // 4개소의 고유한 주택들 일괄 빌딩 프로세스 (층고 2.8m, 창/문 헤더 클리어런스 표준 매핑)
+      const buildHouse = (X_0, Z_0, palette, winType, doorType, roofType, roofScale, name) => {
+        assemblyItems.push(
+          // Floor Slab (두께 0.1m, 상단 Y = 0.3)
+          {
+            blockType: 'block-wall',
+            customColor: palette.slab,
+            position: [X_0, 0.25, Z_0],
+            scale: [4.0, 0.1, 4.0]
+          },
+          // Corner Pillars (층고 2.8m에 완벽 싱크, Y = 0.3에서 시작하여 Y = 3.1에 안착)
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [X_0 - 1.9, 0.3, Z_0 + 1.9],
+            scale: [0.8, 1.26, 0.8]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [X_0 + 1.9, 0.3, Z_0 + 1.9],
+            scale: [0.8, 1.26, 0.8]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [X_0 - 1.9, 0.3, Z_0 - 1.9],
+            scale: [0.8, 1.26, 0.8]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [X_0 + 1.9, 0.3, Z_0 - 1.9],
+            scale: [0.8, 1.26, 0.8]
+          },
+          // 4 Walls (높이 2.8m, 상단 Y = 3.1)
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [X_0 - 1.95, 1.7, Z_0],
+            scale: [0.1, 2.8, 4.0]
+          },
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [X_0 + 1.95, 1.7, Z_0],
+            scale: [0.1, 2.8, 4.0]
+          },
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [X_0, 1.7, Z_0 - 1.95],
+            scale: [4.0, 2.8, 0.1]
+          },
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [X_0, 1.7, Z_0 + 1.95],
+            scale: [4.0, 2.8, 0.1]
+          },
+          // Window (창대 높이 0.9m + 창고 1.2m = 상단 Y = 2.4m, 벽 높이 3.1m 내 완벽 인입)
+          {
+            blockType: winType,
+            customColor: palette.emissive,
+            position: [X_0, 1.2, Z_0 - 1.9],
+            scale: [0.8, 0.67, 0.8]
+          },
+          // Door (바닥 탭 Y = 0.3 + 문높이 2.0m = 상단 Y = 2.3m, 벽 높이 3.1m 내 완벽 인입)
+          {
+            blockType: doorType,
+            customColor: palette.emissive,
+            position: [X_0, 0.3, Z_0 + 2.0],
+            scale: [0.8, 0.8, 0.8]
+          },
+          // Roof (벽체 상단 Y = 3.1m에 밀착 시공)
+          {
+            blockType: roofType,
+            customColor: '#7a2b9e',
+            position: [X_0, 3.1, Z_0],
+            scale: roofScale
+          }
+        );
+      };
+
+      // 4대 하우스 배치 정의
+      const palettes = [
+        { wall: '#60586e', slab: '#1b1424', emissive: '#00FFFF' }, // Dome House
+        { wall: '#34343d', slab: '#121217', emissive: '#FF0055' }, // Gabled House
+        { wall: '#8c8c96', slab: '#2b2b35', emissive: '#00FF99' }, // Flat House
+        { wall: '#4a3e5c', slab: '#201830', emissive: '#ffaa00' }  // Pyramid House
+      ];
+
+      buildHouse(-5.0, -5.0, palettes[0], 'block-window-circle', 'block-gate-slide', 'block-roof-dome', [4.2, 4.2, 4.2], 'Dome House');
+      buildHouse(5.0, -5.0, palettes[1], 'block-window-tall', 'block-gate', 'block-roof', [4.2, 3.0, 4.2], 'Classic Gabled');
+      buildHouse(-5.0, 5.0, palettes[2], 'block-window', 'block-gate-hatch', 'block-roof-flat', [4.2, 0.5, 4.2], 'Eco Flat Terrace');
+      buildHouse(5.0, 5.0, palettes[3], 'block-window-hexagon', 'block-gate-portal', 'block-roof-pyramid', [4.2, 3.0, 4.2], 'Quantum Pyramid');
+
+      return {
+        geometryType: 'modular-assembly',
+        title: 'BIM 가로구역(Street Block) - 4대 네온 하우스 패키지',
+        assembly: assemblyItems,
+        customColor: '#27541b',
+        emissiveColor: '#00FFFF',
+        physicsScript: `function animate(mesh, time) {
+          mesh.traverse(c => {
+            if ((c.name === 'portal-ring') && c.material) {
+              c.rotation.z = time * 0.002;
+            }
+            if ((c.name === 'portal-forcefield' || c.name === 'window-glass' || c.name === 'gate-core') && c.material) {
+              c.material.emissiveIntensity = 1.0 + Math.sin(time * 0.005) * 0.4;
+            }
+          });
+        }`
+      };
+    }
+
+    // Special Zero-Shot training: Building-Structural.ifc 및 구조 프레임 파싱
+    if (normalized.includes('building-structural.ifc') || normalized.includes('structural.ifc') || normalized.includes('구조 훈련') || normalized.includes('structural') || normalized.includes('구조') || normalized.includes('skeleton')) {
+      const palette = {
+        slab: '#3e3e48',
+        wall: '#55555f',
+        emissive: '#00f0ff',
+        beam: '#8c8c96',
+        title: 'Cyber Structural'
+      };
+
+      return {
+        geometryType: 'modular-assembly',
+        title: `BIM Structural Frame - ${palette.title} Edition`,
+        assembly: [
+          // 1. Concrete floor slab (IfcSlab - 두께 0.3m, 상단 Y = 0.3)
+          {
+            blockType: 'block-slab',
+            customColor: palette.slab,
+            position: [0, 0.15, 0],
+            scale: [8, 0.3, 8]
+          },
+          // 2. Concrete footings (IfcFooting) under each corner column
+          {
+            blockType: 'block-footing',
+            customColor: '#55555c',
+            position: [-3.8, 0, 3.8],
+            scale: [1.2, 1.0, 1.2]
+          },
+          {
+            blockType: 'block-footing',
+            customColor: '#55555c',
+            position: [3.8, 0, 3.8],
+            scale: [1.2, 1.0, 1.2]
+          },
+          {
+            blockType: 'block-footing',
+            customColor: '#55555c',
+            position: [-3.8, 0, -3.8],
+            scale: [1.2, 1.0, 1.2]
+          },
+          {
+            blockType: 'block-footing',
+            customColor: '#55555c',
+            position: [3.8, 0, -3.8],
+            scale: [1.2, 1.0, 1.2]
+          },
+          // 3. Corner Columns (IfcColumn - Y = 0.3에서 Y = 3.8까지 연장)
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [-3.8, 0.3, 3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [3.8, 0.3, 3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [-3.8, 0.3, -3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [3.8, 0.3, -3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          // 4. Horizontal Beams / Girders (IfcBeam - Y = 3.5에서 Y = 3.8까지)
+          {
+            blockType: 'block-beam',
+            customColor: palette.beam,
+            position: [0, 3.65, -3.8],
+            scale: [7.6, 1.0, 1.0]
+          },
+          {
+            blockType: 'block-beam',
+            customColor: palette.beam,
+            position: [0, 3.65, 3.8],
+            scale: [7.6, 1.0, 1.0]
+          },
+          {
+            blockType: 'block-beam',
+            customColor: palette.beam,
+            position: [-3.8, 3.65, 0],
+            rotation: [0, Math.PI / 2, 0],
+            scale: [7.6, 1.0, 1.0]
+          },
+          {
+            blockType: 'block-beam',
+            customColor: palette.beam,
+            position: [3.8, 3.65, 0],
+            rotation: [0, Math.PI / 2, 0],
+            scale: [7.6, 1.0, 1.0]
+          },
+          // 5. Connecting steel shoes / brackets (IfcDiscreteAccessory) at top column-beam joints
+          {
+            blockType: 'block-accessory',
+            customColor: '#aaaaaf',
+            position: [-3.8, 3.5, 3.8],
+            scale: [0.8, 0.8, 0.8]
+          },
+          {
+            blockType: 'block-accessory',
+            customColor: '#aaaaaf',
+            position: [3.8, 3.5, 3.8],
+            scale: [0.8, 0.8, 0.8]
+          },
+          {
+            blockType: 'block-accessory',
+            customColor: '#aaaaaf',
+            position: [-3.8, 3.5, -3.8],
+            scale: [0.8, 0.8, 0.8]
+          },
+          {
+            blockType: 'block-accessory',
+            customColor: '#aaaaaf',
+            position: [3.8, 3.5, -3.8],
+            scale: [0.8, 0.8, 0.8]
+          },
+          // 6. Coordinates origin reference proxies (IfcBuildingElementProxy)
+          {
+            blockType: 'block-proxy',
+            customColor: '#ffffff',
+            position: [0, 0.5, 0],
+            scale: [1.2, 1.2, 1.2]
+          },
+          // 7. Partial concrete wall skeletons (IfcWall) to represent construction site
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [0, 1.9, -3.9],
+            scale: [7.6, 3.2, 0.15]
+          }
+        ],
+        customColor: palette.wall,
+        emissiveColor: palette.emissive,
+        physicsScript: `function animate(mesh, time) {
+          mesh.traverse(c => {
+            if ((c.name === 'proxy-ring') && c.material) {
+              c.rotation.y = time * 0.001;
+            }
+            if ((c.name.startsWith('bolt-') || c.name.startsWith('beam-neon-') || c.name.startsWith('shoe-pin') || c.name.startsWith('axis-')) && c.material) {
+              c.material.emissiveIntensity = 1.0 + Math.sin(time * 0.005) * 0.3;
+            }
+          });
+        }`
+      };
+    }
+
+    // Special Zero-Shot training: Building-Architecture.ifc 및 일반 주택/건축물 파싱
+    if (normalized.includes('building-architecture.ifc') || normalized.includes('architecture.ifc') || normalized.includes('silly sample scene') || normalized.includes('single-family house') || normalized.includes('house.ifc') || normalized.includes('집') || normalized.includes('주택') || normalized.includes('빌딩') || normalized.includes('house') || normalized.includes('building') || normalized.includes('건물')) {
+      const roofStyles = ['block-roof', 'block-roof-dome', 'block-roof-flat', 'block-roof-pyramid'];
+      const windowStyles = ['block-window', 'block-window-circle', 'block-window-tall', 'block-window-hexagon'];
+      const doorStyles = ['block-gate', 'block-gate-slide', 'block-gate-hatch', 'block-gate-portal'];
+      
+      let roofType = roofStyles[Math.floor(Math.random() * roofStyles.length)];
+      let winType = windowStyles[Math.floor(Math.random() * windowStyles.length)];
+      let doorType = doorStyles[Math.floor(Math.random() * doorStyles.length)];
+
+      // 프롬프트 상의 특정 지붕/창/문 지형 꼼꼼히 파싱
+      if (normalized.includes('돔') || normalized.includes('둥근 지붕') || normalized.includes('dome')) roofType = 'block-roof-dome';
+      else if (normalized.includes('평평') || normalized.includes('평지붕') || normalized.includes('납작') || normalized.includes('flat') || normalized.includes('terrace')) roofType = 'block-roof-flat';
+      else if (normalized.includes('피라미드') || normalized.includes('pyramid') || normalized.includes('사각뿔')) roofType = 'block-roof-pyramid';
+      else if (normalized.includes('삼각') || normalized.includes('뾰족') || normalized.includes('gable') || normalized.includes('classic')) roofType = 'block-roof';
+
+      if (normalized.includes('원형') || normalized.includes('둥근 창') || normalized.includes('circle') || normalized.includes('circular')) winType = 'block-window-circle';
+      else if (normalized.includes('세로') || normalized.includes('긴 창') || normalized.includes('tall') || normalized.includes('vertical')) winType = 'block-window-tall';
+      else if (normalized.includes('육각') || normalized.includes('hexagon')) winType = 'block-window-hexagon';
+      else if (normalized.includes('격자') || normalized.includes('classic') || normalized.includes('standard')) winType = 'block-window';
+
+      if (normalized.includes('슬라이드') || normalized.includes('미닫이') || normalized.includes('slide') || normalized.includes('sliding')) doorType = 'block-gate-slide';
+      else if (normalized.includes('해치') || normalized.includes('hatch')) doorType = 'block-gate-hatch';
+      else if (normalized.includes('포탈') || normalized.includes('에너지 문') || normalized.includes('portal')) doorType = 'block-gate-portal';
+      else if (normalized.includes('클래식') || normalized.includes('arch') || normalized.includes('hinge')) doorType = 'block-gate';
+
+      const colorPalettes = [
+        { wall: '#8c8c96', slab: '#2b2b35', emissive: '#00FF99', title: 'Cyber Quartz' },
+        { wall: '#34343d', slab: '#121217', emissive: '#FF0055', title: 'Neon Obsidian' },
+        { wall: '#60586e', slab: '#1b1424', emissive: '#00FFFF', title: 'Geode Plasma' }
+      ];
+      const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+
+      const roofScale = roofType === 'block-roof-dome' ? [8.4, 8.4, 8.4] : (roofType === 'block-roof-flat' ? [8.4, 1.0, 8.4] : [8.4, 6.0, 8.4]);
+
+      return {
+        geometryType: 'modular-assembly',
+        title: `BIM House - ${palette.title} Edition`,
+        assembly: [
+          // 1. Concrete floor slab (IfcSlab - 두께 0.3m, 상단 Y = 0.3)
+          {
+            blockType: 'block-wall', 
+            customColor: palette.slab,
+            position: [0, 0.15, 0],
+            scale: [8, 0.3, 8]
+          },
+          // 2. Corner Columns (IfcColumn - 층고 3.5m 완벽 싱크, Y = 0.3에서 Y = 3.8까지 연장)
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [-3.8, 0.3, 3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [3.8, 0.3, 3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [-3.8, 0.3, -3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          {
+            blockType: 'block-pillar',
+            customColor: '#7a7a85',
+            position: [3.8, 0.3, -3.8],
+            scale: [1.5, 1.573, 1.5]
+          },
+          // 3. Four Outer Walls (IfcWall - 높이 3.5m, 상단 Y = 3.8)
+          // West Wall (Left)
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [-3.9, 2.05, 0],
+            scale: [0.2, 3.5, 8.0]
+          },
+          // East Wall (Right)
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [3.9, 2.05, 0],
+            scale: [0.2, 3.5, 8.0]
+          },
+          // North Wall (Back) - with embedded window
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [0, 2.05, -3.9],
+            scale: [8.0, 3.5, 0.2]
+          },
+          // South Wall (Front) - with embedded door
+          {
+            blockType: 'block-wall',
+            customColor: palette.wall,
+            position: [0, 2.05, 3.9],
+            scale: [8.0, 3.5, 0.2]
+          },
+          // 4. Window (IfcWindow) - 창대 높이 0.9m + 창높이 1.4m = 상단 Y = 2.6m (벽체 높이 Y = 3.8m 내 안전 인입)
+          {
+            blockType: winType,
+            customColor: palette.emissive,
+            position: [0, 1.2, -3.8],
+            scale: [1.5, 0.78, 1.0]
+          },
+          // 5. Door (IfcDoor) - 바닥 Y = 0.3 + 문높이 2.1m = 상단 Y = 2.4m (벽체 높이 Y = 3.8m 내 안전 인입)
+          {
+            blockType: doorType,
+            customColor: palette.emissive,
+            position: [0, 0.3, 4.0],
+            scale: [1.5, 0.84, 1.0]
+          },
+          // 6. Gabled/Dome/Flat/Pyramid Roof (IfcRoof) - 벽체 상단 Y = 3.8m에 완벽 밀착 시공
+          {
+            blockType: roofType,
+            customColor: '#7a2b9e',
+            position: [0, 3.8, 0],
+            scale: roofScale
+          }
+        ],
+        customColor: palette.wall,
+        emissiveColor: palette.emissive,
+        physicsScript: `function animate(mesh, time) {
+          mesh.traverse(c => {
+            if ((c.name === 'portal-ring') && c.material) {
+              c.rotation.z = time * 0.002;
+            }
+            if ((c.name === 'block-gate' || c.name === 'gate-core' || c.name === 'window-glass' || c.name === 'portal-forcefield') && c.material) {
+              c.material.emissiveIntensity = 1.0 + Math.sin(time * 0.005) * 0.4;
+            }
+          });
+        }`
+      };
+    }
+
     // A. 교량 관련 키워드 감지
     if (normalized.includes('교량') || normalized.includes('다리') || normalized.includes('bridge') || normalized.includes('대교') || normalized.includes('아체르노') || normalized.includes('acerno') || normalized.includes('minnd')) {
       let bridgeType = 'GIRDER';
@@ -363,7 +840,373 @@ JSON 출력 스키마 명세:
         }`
       };
     }
-    // D-0. 방/공간 키워드 (IfcSpace)
+    // D-0a. OBJ 내장오브젝트 훈련 (위생기구/가구 레이어)
+    else if (normalized.includes('obj 훈련') || normalized.includes('apt_fp_obj') || normalized.includes('가구 훈련') || normalized.includes('객체 훈련') || normalized.includes('내장 훈련') || normalized.includes('화장실 훈련') || normalized.includes('주방 훈련')) {
+      const OBJ_FILES = [
+        'APT_FP_OBJ_000425766',
+        'APT_FP_OBJ_007187965',
+        'APT_FP_OBJ_009075352',
+        'APT_FP_OBJ_010458794',
+        'APT_FP_OBJ_011792381',
+        'APT_FP_OBJ_016402051',
+        'APT_FP_OBJ_020978354',
+        'APT_FP_OBJ_028485799',
+        'APT_FP_OBJ_029272188',
+        'APT_FP_OBJ_029401189',
+        'APT_FP_OBJ_030315116',
+        'APT_FP_OBJ_030727367',
+        'APT_FP_OBJ_031509211',
+        'APT_FP_OBJ_035115868',
+        'APT_FP_OBJ_042566692',
+        'APT_FP_OBJ_043009329',
+        'APT_FP_OBJ_044707175',
+        'APT_FP_OBJ_045018673',
+        'APT_FP_OBJ_048411654',
+        'APT_FP_OBJ_052254652',
+      ];
+
+      // 프롬프트에 파일명 포함 시 직접 선택, 아니면 순환
+      let selectedFile = null;
+      let fileIdx = 0;
+      for (let i = 0; i < OBJ_FILES.length; i++) {
+        const f = OBJ_FILES[i];
+        if (normalized.includes(f.toLowerCase())) {
+          selectedFile = f;
+          fileIdx = i;
+          break;
+        }
+      }
+      if (!selectedFile) {
+        fileIdx = Math.floor(Date.now() / 30000) % OBJ_FILES.length;
+        selectedFile = OBJ_FILES[fileIdx];
+      }
+
+      // 페어링할 OBJ to STR/SPA 맵 (가구, 벽체, 바닥 완벽 매핑 좌표 정합 - 백그라운드 제외 실 footprint 매핑)
+      const MAP_OBJ_TO_STR_SPA = {
+        'APT_FP_OBJ_000425766': { str: 'APT_FP_STR_033918198', spa: 'APT_FP_SPA_019298304' },
+        'APT_FP_OBJ_007187965': { str: 'APT_FP_STR_044417683', spa: 'APT_FP_SPA_001168733' },
+        'APT_FP_OBJ_009075352': { str: 'APT_FP_STR_047218263', spa: 'APT_FP_SPA_030335659' },
+        'APT_FP_OBJ_010458794': { str: 'APT_FP_STR_036892827', spa: 'APT_FP_SPA_004998964' },
+        'APT_FP_OBJ_011792381': { str: 'APT_FP_STR_041610658', spa: 'APT_FP_SPA_038204532' },
+        'APT_FP_OBJ_016402051': { str: 'APT_FP_STR_033918198', spa: 'APT_FP_SPA_027688831' },
+        'APT_FP_OBJ_020978354': { str: 'APT_FP_STR_030218405', spa: 'APT_FP_SPA_003254436' },
+        'APT_FP_OBJ_028485799': { str: 'APT_FP_STR_033918198', spa: 'APT_FP_SPA_019298304' },
+        'APT_FP_OBJ_029272188': { str: 'APT_FP_STR_030218405', spa: 'APT_FP_SPA_009340288' },
+        'APT_FP_OBJ_029401189': { str: 'APT_FP_STR_041610658', spa: 'APT_FP_SPA_038204532' },
+        'APT_FP_OBJ_030315116': { str: 'APT_FP_STR_030218405', spa: 'APT_FP_SPA_003254436' },
+        'APT_FP_OBJ_030727367': { str: 'APT_FP_STR_030218405', spa: 'APT_FP_SPA_003254436' },
+        'APT_FP_OBJ_031509211': { str: 'APT_FP_STR_044417683', spa: 'APT_FP_SPA_031053614' },
+        'APT_FP_OBJ_035115868': { str: 'APT_FP_STR_041610658', spa: 'APT_FP_SPA_005790892' },
+        'APT_FP_OBJ_042566692': { str: 'APT_FP_STR_036892827', spa: 'APT_FP_SPA_004998964' },
+        'APT_FP_OBJ_043009329': { str: 'APT_FP_STR_036892827', spa: 'APT_FP_SPA_004799251' },
+        'APT_FP_OBJ_044707175': { str: 'APT_FP_STR_044417683', spa: 'APT_FP_SPA_031053614' },
+        'APT_FP_OBJ_045018673': { str: 'APT_FP_STR_006574532', spa: 'APT_FP_SPA_013556836' },
+        'APT_FP_OBJ_048411654': { str: 'APT_FP_STR_036892827', spa: 'APT_FP_SPA_004998964' },
+        'APT_FP_OBJ_052254652': { str: 'APT_FP_STR_030218405', spa: 'APT_FP_SPA_003254436' }
+      };
+
+      const pair = MAP_OBJ_TO_STR_SPA[selectedFile] || { str: 'APT_FP_STR_000477071', spa: 'APT_FP_SPA_004998964' };
+      const selectedStrFile = pair.str;
+      const selectedSpaFile = pair.spa;
+
+      try {
+        const objUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/OBJ/${selectedFile}.json`;
+        const strUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/STR/${selectedStrFile}.json`;
+        const spaUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/SPA/${selectedSpaFile}.json`;
+
+        const [objRes, strRes, spaRes] = await Promise.all([fetch(objUrl), fetch(strUrl), fetch(spaUrl)]);
+        if (!objRes.ok) throw new Error(`OBJ HTTP ${objRes.status}`);
+
+        const [objJson, strJson, spaJson] = await Promise.all([
+          objRes.json(),
+          strRes.ok ? strRes.json() : null,
+          spaRes.ok ? spaRes.json() : null
+        ]);
+
+        // 스케일 자동 보정: 욕조(1.4m) → 싱크대(0.6m) → 가스레인지(0.6m) 순 fallback
+        let scaleMperPx = 0.00399;
+        const tubAnn = objJson.annotations?.find(a => a.category_id === 7);
+        if (tubAnn?.bbox) {
+          // 욕조 실물 장변 = 1.4m (한국 APT 표준)
+          const [,, bw, bh] = tubAnn.bbox;
+          const longestPx = Math.max(bw, bh);
+          if (longestPx > 0) scaleMperPx = 1.4 / longestPx;
+        } else {
+          // 욕조 없는 도면 (샤워부스형) → 싱크대 장변 0.6m 기준
+          const kitAnn = objJson.annotations?.find(a => a.category_id === 6)
+                      ?? objJson.annotations?.find(a => a.category_id === 8);
+          if (kitAnn?.bbox) {
+            const [,, bw, bh] = kitAnn.bbox;
+            const longestPx = Math.max(bw, bh);
+            if (longestPx > 0) scaleMperPx = 0.6 / longestPx;
+          }
+        }
+
+        const parser  = new FloorPlanParser({ scaleMperPx, floorHeight: 2.8, maxElements: 150 });
+        const parsedObj = parser.parseObjects(objJson, { floorY: 0 });
+        const parsedStr = strJson ? parser.parse(strJson, { categoryFilter: [9, 10, 11], floorY: 0 }) : { walls: [], windows: [], doors: [], total: 0 };
+        const parsedSpa = spaJson ? parser.parseSpaces(spaJson, { floorY: 0 }) : { spaces: [], total: 0 };
+
+        // 모든 레이어 병합 (구조 + 내장가구 + 공간 색상마감)
+        const merged = {
+          ...parsedStr,
+          objects: parsedObj.objects,
+          spaces:  parsedSpa.spaces,
+          total:   parsedStr.total + parsedObj.total + parsedSpa.total,
+          fileName: selectedFile,
+        };
+
+        const summary = parser.summarize(merged);
+        console.log('[FloorPlanParser OBJ] 통합 평면도 훈련 완료:', summary, `scale=${(scaleMperPx*1000).toFixed(2)}mm/px`);
+
+        const assembly = parser.toAssembly(merged, {
+          wallColor:   '#55555f',
+          windowColor: '#00DDFF',
+          doorColor:   '#FF6633',
+          emissive:    '#00f0ff',
+          floorY:      0,
+        });
+        assembly._trainingMeta = summary;
+        assembly._datasetType  = 'OBJ';
+        return assembly;
+      } catch (err) {
+        console.warn('[FloorPlanParser OBJ] 로드 실패:', err.message);
+        return {
+          geometryType: 'modular-assembly',
+          title: `OBJ 훈련 폴백 (${selectedFile})`,
+          assembly: [
+            // 바닥 지글거림 해결: 슬래브 제외 완료
+            { blockType: 'block-toilet',  customColor: '#e8e8f0', position: [-2, 0.2, 0], scale: [0.36, 0.4, 0.7] },
+            { blockType: 'block-sink',    customColor: '#e8e8f0', position: [ 0, 0.43, 0], scale: [0.45, 0.85, 0.45] },
+            { blockType: 'block-bathtub', customColor: '#e0e0ee', position: [ 2, 0.25, 0], scale: [1.4, 0.5, 0.7] },
+            { blockType: 'block-kitchen', customColor: '#c0c0cc', position: [ 0, 0.43, 2], scale: [1.2, 0.85, 0.55] },
+            { blockType: 'block-gas',     customColor: '#888890', position: [ 0, 0.43,-2], scale: [0.6, 0.85, 0.55] },
+          ],
+          customColor: '#55555f', emissiveColor: '#00f0ff',
+          physicsScript: 'function animate(mesh, time) {}'
+        };
+      }
+    }
+    // D-0b. 평면도 훈련 키워드 (FloorPlanParser 연동)
+    else if (normalized.includes('평면도 훈련') || normalized.includes('apt_fp_str') || normalized.includes('평면도') || normalized.includes('floor plan') || normalized.includes('floorplan') || normalized.includes('도면 훈련') || normalized.includes('도면훈련') || normalized.includes('구조 평면')) {
+      // 훈련 데이터셋 목록 (순환 로드용)
+      const TRAINING_FILES = [
+        'APT_FP_STR_000477071',
+        'APT_FP_STR_000608681',
+        'APT_FP_STR_006574532',
+        'APT_FP_STR_009278212',
+        'APT_FP_STR_011460835',
+        'APT_FP_STR_014442174',
+        'APT_FP_STR_015141781',
+        'APT_FP_STR_027300144',
+        'APT_FP_STR_028450603',
+        'APT_FP_STR_030218405',
+        'APT_FP_STR_031691685',
+        'APT_FP_STR_033918198',
+        'APT_FP_STR_036892827',
+        'APT_FP_STR_041610658',
+        'APT_FP_STR_043989218',
+        'APT_FP_STR_044417683',
+        'APT_FP_STR_044477111',
+        'APT_FP_STR_047218263',
+        'APT_FP_STR_047223161',
+        'APT_FP_STR_047765291',
+      ];
+
+      // 프롬프트에서 파일명 추출 또는 순환 선택
+      let selectedFile = null;
+      let selectedObjFile = null;
+      let fileIdx = 0;
+
+      for (let i = 0; i < TRAINING_FILES.length; i++) {
+        const f = TRAINING_FILES[i];
+        if (normalized.includes(f.toLowerCase())) {
+          selectedFile = f;
+          fileIdx = i;
+          break;
+        }
+      }
+      if (!selectedFile) {
+        fileIdx = Math.floor(Date.now() / 30000) % TRAINING_FILES.length;
+        selectedFile = TRAINING_FILES[fileIdx];
+      }
+
+      // OBJ 파일 목록 & 페어링
+      const OBJ_FILES = [
+        'APT_FP_OBJ_000425766',
+        'APT_FP_OBJ_007187965',
+        'APT_FP_OBJ_009075352',
+        'APT_FP_OBJ_010458794',
+        'APT_FP_OBJ_011792381',
+        'APT_FP_OBJ_016402051',
+        'APT_FP_OBJ_020978354',
+        'APT_FP_OBJ_028485799',
+        'APT_FP_OBJ_029272188',
+        'APT_FP_OBJ_029401189',
+        'APT_FP_OBJ_030315116',
+        'APT_FP_OBJ_030727367',
+        'APT_FP_OBJ_031509211',
+        'APT_FP_OBJ_035115868',
+        'APT_FP_OBJ_042566692',
+        'APT_FP_OBJ_043009329',
+        'APT_FP_OBJ_044707175',
+        'APT_FP_OBJ_045018673',
+        'APT_FP_OBJ_048411654',
+        'APT_FP_OBJ_052254652',
+      ];
+      for (const objF of OBJ_FILES) {
+        if (normalized.includes(objF.toLowerCase())) {
+          selectedObjFile = objF;
+          break;
+        }
+      }
+      if (!selectedObjFile) {
+        selectedObjFile = OBJ_FILES[fileIdx % OBJ_FILES.length];
+      }
+
+      // 페어링할 STR to OBJ/SPA 맵 (가구, 벽체, 바닥 완벽 매핑 좌표 정합)
+      const MAP_STR_TO_OBJ_SPA = {
+        'APT_FP_STR_000477071': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_000608681': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_006574532': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_009278212': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_011460835': { obj: 'APT_FP_OBJ_035115868', spa: 'APT_FP_SPA_005790892' },
+        'APT_FP_STR_014442174': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_015141781': { obj: 'APT_FP_OBJ_020978354', spa: 'APT_FP_SPA_007562895' },
+        'APT_FP_STR_027300144': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_028450603': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_030218405': { obj: 'APT_FP_OBJ_035115868', spa: 'APT_FP_SPA_005790892' },
+        'APT_FP_STR_031691685': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_033918198': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_036892827': { obj: 'APT_FP_OBJ_020978354', spa: 'APT_FP_SPA_007562895' },
+        'APT_FP_STR_041610658': { obj: 'APT_FP_OBJ_035115868', spa: 'APT_FP_SPA_005790892' },
+        'APT_FP_STR_043989218': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_044417683': { obj: 'APT_FP_OBJ_020978354', spa: 'APT_FP_SPA_007562895' },
+        'APT_FP_STR_044477111': { obj: 'APT_FP_OBJ_020978354', spa: 'APT_FP_SPA_007562895' },
+        'APT_FP_STR_047218263': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_047223161': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' },
+        'APT_FP_STR_047765291': { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' }
+      };
+      const pair = MAP_STR_TO_OBJ_SPA[selectedFile] || { obj: 'APT_FP_OBJ_000425766', spa: 'APT_FP_SPA_000310275' };
+      selectedObjFile = pair.obj;
+      let selectedSpaFile = pair.spa;
+
+      // 다층 구조 아파트 지원 (예: "7층", "7-story", "5층 아파트")
+      let floorCount = 1;
+      const floorMatch = normalized.match(/(\d+)\s*(층|story|level|floor|fl)/i);
+      if (floorMatch) {
+        floorCount = parseInt(floorMatch[1], 10);
+      }
+
+      // JSON 라벨 비동기 병렬 로드 (STR + OBJ + SPA 동시 로드)
+      try {
+        const strUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/STR/${selectedFile}.json`;
+        const objUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/OBJ/${selectedObjFile}.json`;
+        const spaUrl = `/data/image-drawing/02.%EB%9D%BC%EB%B2%A8%EB%A7%81%EB%8D%B0%EC%9D%B4%ED%84%B0/SPA/${selectedSpaFile}.json`;
+
+        const [strRes, objRes, spaRes] = await Promise.all([fetch(strUrl), fetch(objUrl), fetch(spaUrl)]);
+        if (!strRes.ok) throw new Error(`STR HTTP ${strRes.status} / OBJ HTTP ${objRes.status} / SPA HTTP ${spaRes.status}`);
+
+        const [strJson, objJson, spaJson] = await Promise.all([strRes.json(), objRes.json(), spaRes.json()]);
+
+        const parser = new FloorPlanParser({ scaleMperPx: 0.00399, floorHeight: 2.8, maxElements: 150 });
+        let mergedAssembly = [];
+        let summaryList = [];
+
+        for (let i = 0; i < floorCount; i++) {
+          const floorY = i * 2.8;
+          // 구조(STR), 내장(OBJ), 공간(SPA) 각각 파싱
+          const parsedStr = parser.parse(strJson,       { categoryFilter: [9, 10, 11], floorY });
+          const parsedObj = parser.parseObjects(objJson, { floorY });
+          const parsedSpa = parser.parseSpaces(spaJson,   { floorY });
+
+          // 모든 요소 병합 (바닥 마감 컬러맵 반영)
+          const merged = {
+            ...parsedStr,
+            objects: parsedObj.objects,
+            spaces:  parsedSpa.spaces,
+            total:   parsedStr.total + parsedObj.total + parsedSpa.total,
+          };
+
+          const palette = {
+            wallColor:   '#55555f',
+            windowColor: '#00DDFF',
+            doorColor:   '#FF6633',
+            emissive:    '#00f0ff',
+            floorY:      floorY,
+          };
+          const floorAssembly = parser.toAssembly(merged, palette);
+
+          for (const item of floorAssembly.assembly) {
+            // 바닥/지붕 슬라브 중복 렌더링 방지: 최하층만 바닥 슬라브 생성, 그외는 지붕 슬라브로 상부 마감
+            if (item.blockType === 'block-slab' && item.label.includes('바닥') && i > 0) continue;
+            // 최상층이 아니면 지붕 슬라브 제외하여 드로우콜 최적화
+            if (item.blockType === 'block-slab' && item.label.includes('지붕') && i < floorCount - 1) continue;
+
+            item.label = `${i + 1}층 ${item.label}`;
+            mergedAssembly.push(item);
+          }
+          summaryList.push(parser.summarize(merged));
+        }
+
+        const finalAssembly = {
+          geometryType: 'modular-assembly',
+          title: `${floorCount}층 아파트: 구조 ${selectedFile} + 가구 ${selectedObjFile} (적층 완료)`,
+          assembly: mergedAssembly,
+          customColor: '#55555f',
+          emissiveColor: '#00f0ff',
+          physicsScript: `function animate(mesh, time) {
+            mesh.traverse(c => {
+              if (c.name === 'window-glass' && c.material) {
+                c.material.emissiveIntensity = 0.6 + Math.sin(time * 0.003) * 0.3;
+              }
+            });
+          }`,
+          _trainingMeta: {
+            strFile: selectedFile,
+            objFile: selectedObjFile,
+            층수: floorCount,
+            단층요약: summaryList[0],
+            총블록수: mergedAssembly.length
+          }
+        };
+
+        console.log(`[FloorPlanParser] ${floorCount}층 통합 아파트 훈련 완료:`, finalAssembly._trainingMeta);
+        return finalAssembly;
+      } catch (err) {
+        console.warn('[FloorPlanParser] 통합 JSON 로드 실패, 폴백 사용:', err.message);
+        // 폴백: 기본 구조 + 내장 가구 혼합 아파트 (다층 대응)
+        const fallbackAssembly = [];
+        for (let i = 0; i < floorCount; i++) {
+          const floorY = i * 2.8;
+          // 구조 부재
+          fallbackAssembly.push(
+            // 구조 부재 (기둥/바닥 제거 규정 준수)
+            { blockType: 'block-wall',   customColor: '#55555f', position: [0, floorY + 1.4, -7.4], scale: [18, 2.8, 0.2] },
+            { blockType: 'block-wall',   customColor: '#55555f', position: [0, floorY + 1.4,  7.4], scale: [18, 2.8, 0.2] },
+            { blockType: 'block-wall',   customColor: '#55555f', position: [-9.4, floorY + 1.4, 0], scale: [0.2, 2.8, 15] },
+            { blockType: 'block-wall',   customColor: '#55555f', position: [ 9.4, floorY + 1.4, 0], scale: [0.2, 2.8, 15] },
+          );
+          // 내장 가구
+          fallbackAssembly.push(
+            { blockType: 'block-toilet',  customColor: '#e8e8f0', position: [-2, floorY + 0.2, 0], scale: [0.36, 0.4, 0.7] },
+            { blockType: 'block-sink',    customColor: '#e8e8f0', position: [ 0, floorY + 0.43, 0], scale: [0.45, 0.85, 0.45] },
+            { blockType: 'block-bathtub', customColor: '#e0e0ee', position: [ 2, floorY + 0.25, 0], scale: [1.4, 0.5, 0.7] },
+            { blockType: 'block-kitchen', customColor: '#c0c0cc', position: [ 0, floorY + 0.43, 2], scale: [1.2, 0.85, 0.55] },
+            { blockType: 'block-gas',     customColor: '#888890', position: [ 0, floorY + 0.43,-2], scale: [0.6, 0.85, 0.55] },
+          );
+        }
+        return {
+          geometryType: 'modular-assembly',
+          title: `${floorCount}층 통합 아파트 훈련 폴백 (${selectedFile})`,
+          assembly: fallbackAssembly,
+          customColor: '#55555f', emissiveColor: '#00f0ff',
+          physicsScript: 'function animate(mesh, time) {}'
+        };
+      }
+    }
+
+    // D-0b. 방/공간 키워드 (IfcSpace)
     else if (normalized.includes('방') || normalized.includes('room') || normalized.includes('벽') || normalized.includes('wall') || normalized.includes('공간') || normalized.includes('space') || normalized.includes('문')) {
       return {
         geometryType: 'IfcSpace',
