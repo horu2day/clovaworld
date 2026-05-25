@@ -328,12 +328,7 @@ export class ProceduralGenerator {
             blockMesh = hatchGroup;
             break;
           }
-          case 'block-slab':
-            blockMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(1.0, 1.0, 1.0),
-              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8, metalness: 0.1 })
-            );
-            break;
+
           case 'block-wall':
             blockMesh = new THREE.Mesh(
               new THREE.BoxGeometry(1.0, 1.0, 1.0),
@@ -563,14 +558,25 @@ export class ProceduralGenerator {
           }
           case 'block-slab': {
             const slabGroup = new THREE.Group();
+            const emissiveHex = item.emissiveColor || '#00f0ff';
             const slabBody = new THREE.Mesh(
               new THREE.BoxGeometry(1.0, 1.0, 1.0),
-              new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.85, metalness: 0.1 })
+              new THREE.MeshStandardMaterial({
+                color: colorHex,
+                roughness: 0.85,
+                metalness: 0.1,
+                emissive: new THREE.Color(emissiveHex),
+                emissiveIntensity: 0.1
+              })
             );
             slabBody.name = 'slab-body';
             slabGroup.add(slabBody);
             // Neon border edges
-            const neonSlabMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8 });
+            const neonSlabMat = new THREE.MeshStandardMaterial({
+              color: emissiveHex,
+              emissive: new THREE.Color(emissiveHex),
+              emissiveIntensity: 0.8
+            });
             const edgeGeoX = new THREE.BoxGeometry(1.02, 0.03, 0.03);
             const edgeGeoZ = new THREE.BoxGeometry(0.03, 0.03, 1.02);
             const borders = [

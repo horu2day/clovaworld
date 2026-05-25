@@ -317,6 +317,7 @@ export class FloorPlanParser {
       assembly.push({
         blockType:   'block-slab',
         customColor: s.color,
+        emissiveColor: s.color, // 방 구역 색상과 연동된 발광 색상 주입
         position:    [s.x, floorY + 0.025, s.z], // Z-fighting 완전히 피하기 위한 2.5cm 상향 오프셋
         scale:       [s.width - 0.04, 0.04, s.depth - 0.04], // 벽체 침범 방지용 4cm 수평 축소
         ifcType:     'IfcCovering',
