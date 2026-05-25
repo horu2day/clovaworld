@@ -293,33 +293,109 @@ export class FloorPlanParser {
       hasRoof      = false,
     } = palette;
 
-    const assembly = [];
-    const entranceSpace = parsed.spaces?.find(s => s.categoryId === 16);
-    const balconySpace  = parsed.spaces?.find(s => s.categoryId === 17);
+    // ─── STR-SPA 및 STR-OBJ 자동 위치/크기 정합 캘리브레이션 (Strategy B) ───
+    const walls = parsed.walls || [];
+    const spaces = parsed.spaces || [];
+    const objects = parsed.objects || [];
 
-    // ─── 바닥 슬라브 (전체 평면 커버) ────────────────────────
-    // 지글거림 방지를 위해 전체 바닥 슬라브 생성 일시 생략 (공간별 바닥 슬라브만 렌더링)
-    /*
-    const totalW = parsed.imageWidth  * parsed.scaleMperPx;
-    const totalD = parsed.imageHeight * parsed.scaleMperPx;
-    assembly.push({
-      blockType:   'block-slab',
-      customColor: '#3e3e48',
-      position:    [0, floorY - 0.15, 0],
-      scale:       [totalW, 0.3, totalD],
-      ifcType:     'IfcSlab',
-      label:       '바닥 슬라브',
-    });
-    */
+    if (walls.length > 0) {
+      // 1. STR 벽체들의 글로벌 바운딩 박스 계산
+      let minX_str = Infinity, maxX_str = -Infinity;
+      let minZ_str = Infinity, maxZ_str = -Infinity;
+      for (const w of walls) {
+        const hw = (w.isHorizontal ? w.length : w.thickness) / 2;
+        const hd = (w.isHorizontal ? w.thickness : w.length) / 2;
+        minX_str = Math.min(minX_str, w.x - hw);
+        maxX_str = Math.max(maxX_str, w.x + hw);
+        minZ_str = Math.min(minZ_str, w.z - hd);
+        maxZ_str = Math.max(maxZ_str, w.z + hd);
+      }
+      
+      const centerStrX = (minX_str + maxX_str) / 2;
+      const centerStrZ = (minZ_str + maxZ_str) / 2;
+      const sizeStrX = maxX_str - minX_str;
+      const sizeStrZ = maxZ_str - minZ_str;
+
+      // 2. SPA 공간 구획 글로벌 바운딩 박스 계산 및 정합
+      if (spaces.length > 0) {
+        let minX_spa = Infinity, maxX_spa = -Infinity;
+        let minZ_spa = Infinity, maxZ_spa = -Infinity;
+        for (const s of spaces) {
+          minX_spa = Math.min(minX_spa, s.x - s.width / 2);
+          maxX_spa = Math.max(maxX_spa, s.x + s.width / 2);
+          minZ_spa = Math.min(minZ_spa, s.z - s.depth / 2);
+          maxZ_spa = Math.max(maxZ_spa, s.z + s.depth / 2);
+        }
+        
+        const centerSpaX = (minX_spa + maxX_spa) / 2;
+        const centerSpaZ = (minZ_spa + maxZ_spa) / 2;
+        const sizeSpaX = maxX_spa - minX_spa;
+        const sizeSpaZ = maxZ_spa - minZ_spa;
+
+        let scaleSpaX = 1.0;
+        let scaleSpaZ = 1.0;
+        if (sizeSpaX > 0.05) scaleSpaX = sizeStrX / sizeSpaX;
+        if (sizeSpaZ > 0.05) scaleSpaZ = sizeStrZ / sizeSpaZ;
+
+        // 극단적 스케일 왜곡 방지를 위한 안전 클램핑 (0.85 ~ 1.15)
+        scaleSpaX = Math.max(0.85, Math.min(1.15, scaleSpaX));
+        scaleSpaZ = Math.max(0.85, Math.min(1.15, scaleSpaZ));
+
+        for (const s of spaces) {
+          const dx = s.x - centerSpaX;
+          const dz = s.z - centerSpaZ;
+          s.x = centerStrX + dx * scaleSpaX;
+          s.z = centerStrZ + dz * scaleSpaZ;
+          s.width *= scaleSpaX;
+          s.depth *= scaleSpaZ;
+        }
+      }
+
+      // 3. OBJ 내장가구 글로벌 바운딩 박스 계산 및 정합
+      if (objects.length > 0) {
+        let minX_obj = Infinity, maxX_obj = -Infinity;
+        let minZ_obj = Infinity, maxZ_obj = -Infinity;
+        for (const o of objects) {
+          minX_obj = Math.min(minX_obj, o.x - o.objWidth / 2);
+          maxX_obj = Math.max(maxX_obj, o.x + o.objWidth / 2);
+          minZ_obj = Math.min(minZ_obj, o.z - o.objDepth / 2);
+          maxZ_obj = Math.max(maxZ_obj, o.z + o.objDepth / 2);
+        }
+        
+        const centerObjX = (minX_obj + maxX_obj) / 2;
+        const centerObjZ = (minZ_obj + maxZ_obj) / 2;
+        const sizeObjX = maxX_obj - minX_obj;
+        const sizeObjZ = maxZ_obj - minZ_obj;
+
+        let scaleObjX = 1.0;
+        let scaleObjZ = 1.0;
+        if (sizeObjX > 0.05) scaleObjX = sizeStrX / sizeObjX;
+        if (sizeObjZ > 0.05) scaleObjZ = sizeStrZ / sizeObjZ;
+
+        scaleObjX = Math.max(0.85, Math.min(1.15, scaleObjX));
+        scaleObjZ = Math.max(0.85, Math.min(1.15, scaleObjZ));
+
+        for (const o of objects) {
+          const dx = o.x - centerObjX;
+          const dz = o.z - centerObjZ;
+          o.x = centerStrX + dx * scaleObjX;
+          o.z = centerStrZ + dz * scaleObjZ;
+        }
+      }
+    }
+
+    const assembly = [];
+    const entranceSpace = spaces.find(s => s.categoryId === 16);
+    const balconySpace  = spaces.find(s => s.categoryId === 17);
 
     // ─── 공간 바닥 마감 (Room Floor Finishes - 구별 색상 부여 및 지글거림 방지) ───
-    for (const s of (parsed.spaces ?? [])) {
+    for (const s of spaces) {
       assembly.push({
         blockType:   'block-slab',
         customColor: s.color,
-        emissiveColor: s.color, // 방 구역 색상과 연동된 발광 색상 주입
+        emissiveColor: s.emissive || s.color, // 방 구역 색상과 연동된 구역별 발광 색상 주입
         position:    [s.x, floorY + 0.025, s.z], // Z-fighting 완전히 피하기 위한 2.5cm 상향 오프셋
-        scale:       [s.width - 0.04, 0.04, s.depth - 0.04], // 벽체 침범 방지용 4cm 수평 축소
+        scale:       [s.width - 0.02, 0.04, s.depth - 0.02], // 캘리브레이션 완료로 2cm 초미세 수평 축소 (틈새 0mm 칼재단 정합)
         ifcType:     'IfcCovering',
         label:       `${s.label} 바닥마감`,
         meta:        { annotationId: s.annotationId, area: s.area },
@@ -651,19 +727,19 @@ export class FloorPlanParser {
 
     const spaces = [];
     const SPACE_COLORS = {
-      1:  { color: '#b39ddb', label: '다목적공간' }, // 연자주
-      2:  { color: '#eeeeee', label: '엘리베이터홀' }, // 밝은회색
-      3:  { color: '#dddddd', label: '계단실' }, // 회색
-      13: { color: '#ffe082', label: '거실' }, // 진한 오렌지-옐로우 (거실 확 구분)
-      14: { color: '#90caf9', label: '침실' }, // 밝은 스카이블루 (방 확 구분)
-      15: { color: '#a5d6a7', label: '주방' }, // 싱그러운 그린
-      16: { color: '#ffab91', label: '현관' }, // 진한 코랄
-      17: { color: '#c5e1a5', label: '발코니' }, // 라임그린
-      18: { color: '#80deea', label: '화장실' }, // 선명한 시안
-      19: { color: '#cfd8dc', label: '실외기실' },
-      20: { color: '#f48fb1', label: '드레스룸' }, // 핑크
-      22: { color: '#eeeeee', label: '복도/기타' },
-      23: { color: '#ffe0b2', label: '엘리베이터' },
+      1:  { color: '#b39ddb', label: '다목적공간', emissive: '#bf5fff' }, // 연자주 -> 밝은 보라
+      2:  { color: '#eeeeee', label: '엘리베이터홀', emissive: '#a0c0ff' }, // 밝은회색 -> 사이버 쿨블루
+      3:  { color: '#dddddd', label: '계단실', emissive: '#ffbf00' }, // 회색 -> 경고 황색
+      13: { color: '#ffe082', label: '거실', emissive: '#ff8c00' }, // 진한 오렌지-옐로우 -> 테라 네온 오렌지
+      14: { color: '#90caf9', label: '침실', emissive: '#0066ff' }, // 밝은 스카이블루 -> 딥 블루 네온
+      15: { color: '#a5d6a7', label: '주방', emissive: '#00ff66' }, // 싱그러운 그린 -> 에메랄드 네온 그린
+      16: { color: '#ffab91', label: '현관', emissive: '#ff3300' }, // 진한 코랄 -> 강렬한 레드 오렌지
+      17: { color: '#c5e1a5', label: '발코니', emissive: '#7cff00' }, // 라임그린 -> 일렉트릭 라임 그린
+      18: { color: '#80deea', label: '화장실', emissive: '#00ffff' }, // 선명한 시안 -> 청정 아쿠아 시안
+      19: { color: '#cfd8dc', label: '실외기실', emissive: '#ff0033' }, // 회색 -> 경보 루비 레드
+      20: { color: '#f48fb1', label: '드레스룸', emissive: '#ff007f' }, // 핑크 -> 핫 핑크 네온
+      22: { color: '#eeeeee', label: '복도/기타', emissive: '#ffff33' }, // 밝은회색 -> 가이드 라인 옐로우
+      23: { color: '#ffe0b2', label: '엘리베이터', emissive: '#ffaa00' }, // 연황토 -> 사이버 골드
     };
 
     let count = 0;
@@ -687,7 +763,7 @@ export class FloorPlanParser {
       const rw = bw * this.scaleMperPx * this.worldScale;
       const rh = bh * this.scaleMperPx * this.worldScale;
 
-      const meta = SPACE_COLORS[ann.category_id] ?? { color: '#fafafa', label: '공간' };
+      const meta = SPACE_COLORS[ann.category_id] ?? { color: '#fafafa', label: '공간', emissive: '#00f0ff' };
 
       spaces.push({
         x: x3d,
@@ -696,6 +772,7 @@ export class FloorPlanParser {
         width:  rw,
         depth:  rh,
         color:  meta.color,
+        emissive: meta.emissive || meta.color,
         label:  meta.label,
         categoryId: ann.category_id,
         annotationId: ann.id,

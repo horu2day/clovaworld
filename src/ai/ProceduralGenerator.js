@@ -767,7 +767,7 @@ export class ProceduralGenerator {
         blockMesh.userData = {
           interactive: true,
           type: ifcType,
-          name: `${ifcType} (${item.blockType.replace('block-', '')})`,
+          name: item.label || `${ifcType} (${item.blockType.replace('block-', '')})`,
           state: 'BIM 개별 부재 시공 완료',
           neonStyle: 'pulse'
         };
